@@ -20,34 +20,41 @@ class IAPool {
     }
 
     computeNetInput(inputs) {
-        let inputSignal = new Array(this.size).fill(0);
+        if (!Array.isArray(inputs) || !Array.isArray(this.weights) || 
+            inputs.length !== this.weights.length) {
+            console.error("Invalid inputs or weights", {inputs, weights: this.weights});
+            return new Array(this.size).fill(0);
+        }
+    
+        const inputSignal = new Array(this.size).fill(0);
         
+        // Process each input source
         for (let i = 0; i < inputs.length; i++) {
-            if (!inputs[i] || !this.weights[i]) {
-                console.error(`Invalid input or weight at index ${i}`);
-                console.error('Input:', inputs[i]);
-                console.error('Weight:', this.weights[i]);
+            const input = inputs[i];
+            const weights = this.weights[i];
+            
+            if (!Array.isArray(input) || !Array.isArray(weights)) {
+                console.error(`Invalid input or weight matrix at index ${i}`);
                 continue;
             }
-            const clippedInput = inputs[i].map(v => Math.max(0, v));
+    
+            // Clip negative inputs to 0
+            const clippedInput = input.map(v => Math.max(0, v));
+            
+            // Compute dot product for this input source
             for (let j = 0; j < this.size; j++) {
-                if (!this.weights[i][j]) {
-                    console.error(`Invalid weight at index [${i}][${j}]`);
-                    continue;
-                }
                 for (let k = 0; k < clippedInput.length; k++) {
-                    if (this.weights[i][j][k] === undefined) {
-                        console.error(`Invalid weight at index [${i}][${j}][${k}]`);
-                        continue;
+                    if (weights[k] && typeof weights[k][j] === 'number') {
+                        inputSignal[j] += clippedInput[k] * weights[k][j];
                     }
-                    inputSignal[j] += clippedInput[k] * this.weights[i][j][k];
                 }
             }
         }
     
+        // Compute inhibitory signal within the pool
         const clippedState = this.state.map(v => Math.max(0, v));
-        const inhibitorySignal = this.inhibitoryWeights.map(row => 
-            row.reduce((sum, weight, i) => sum + weight * clippedState[i], 0)
+        const inhibitorySignal = this.inhibitoryWeights.map((row, i) => 
+            row.reduce((sum, weight, j) => sum + weight * clippedState[j], 0)
         );
     
         return inputSignal.map((val, i) => val + inhibitorySignal[i]);
@@ -191,101 +198,138 @@ function createWeightMatrix(fromSize, toSize, excitation, inhibition) {
 
 function initializeModel(params) {
     console.log("Initializing model with params:", params);
-    console.log("Word list:", wordList);
-    console.log("Word frequencies:", wordFrequencies);
-
+    
     // Initialize letter layers
     lettersLayer = [];
     for (let i = 0; i < 4; i++) {
+        // Create the letter pool
         const letterPool = new IAPool(26, null, params.DECAY_RATE, 0, 1, params.MIN_ACTIVATION, params.LETTER_LETTER_INHIBITION);
-        letterPool.weights = [
-            letters.map(l => l.map(f => f ? params.FEATURE_LETTER_EXCITATION : -params.FEATURE_LETTER_INHIBITION)),
-            letters.map(l => l.map(f => f ? -params.FEATURE_LETTER_INHIBITION : params.FEATURE_LETTER_EXCITATION))
-        ];
+        
+        // Create feature-to-letter weight matrices
+        const featurePresentWeights = Array(14).fill().map(() => Array(26).fill(0));
+        const featureAbsentWeights = Array(14).fill().map(() => Array(26).fill(0));
+        
+        // Fill in the feature weights
+        letters.forEach((letterFeatures, letterIdx) => {
+            letterFeatures.forEach((feature, featureIdx) => {
+                featurePresentWeights[featureIdx][letterIdx] = feature ? 
+                    params.FEATURE_LETTER_EXCITATION : -params.FEATURE_LETTER_INHIBITION;
+                featureAbsentWeights[featureIdx][letterIdx] = feature ? 
+                    -params.FEATURE_LETTER_INHIBITION : params.FEATURE_LETTER_EXCITATION;
+            });
+        });
+
+        // Create word-to-letter weight matrix for this position
+        const wordToLetterWeights = Array(wordList.length).fill().map(() => Array(26).fill(-params.WORD_LETTER_INHIBITION));
+        
+        // Set excitatory connections from words to letters
+        wordList.forEach((word, wordIdx) => {
+            if (word[i]) {
+                const letterIdx = letterToIndex[word[i].toUpperCase()];
+                if (letterIdx !== undefined) {
+                    wordToLetterWeights[wordIdx][letterIdx] = params.WORD_LETTER_EXCITATION;
+                }
+            }
+        });
+
+        letterPool.weights = [featurePresentWeights, featureAbsentWeights, wordToLetterWeights];
         lettersLayer.push(letterPool);
     }
 
-    // Initialize word layer
-    if (wordList.length === 0 || wordFrequencies.length === 0) {
-        console.error("Word list or frequencies are empty. Make sure fetchWordList() is called before initializeModel().");
-        return;
-    }
-
+    // Initialize word layer with resting states
     const restingState = wordFrequencies.map(freq => freq * params.REST_GAIN);
-    wordsLayer = new IAPool(wordList.length, null, params.DECAY_RATE, restingState, 1, params.MIN_ACTIVATION, params.WORD_WORD_INHIBITION);
+    wordsLayer = new IAPool(wordList.length, null, params.DECAY_RATE, restingState, 1, 
+        params.MIN_ACTIVATION, params.WORD_WORD_INHIBITION);
 
-    // Create weight matrices
-    const letterToWordWeights = createWeightMatrix(26, wordList.length, params.LETTER_WORD_EXCITATION, -params.LETTER_WORD_INHIBITION);
-    const wordToLetterWeights = createWeightMatrix(wordList.length, 26, params.WORD_LETTER_EXCITATION, -params.WORD_LETTER_INHIBITION);
+    // Create letter-to-word weight matrices
+    const letterToWordWeights = Array(4).fill().map(() => 
+        Array(26).fill().map(() => Array(wordList.length).fill(-params.LETTER_WORD_INHIBITION))
+    );
 
-    // Set excitatory connections
-    wordList.forEach((word, wordIndex) => {
-        word.split('').forEach((letter, position) => {
-            const letterIndex = letterToIndex[letter];
-            if (letterIndex === undefined) {
-                console.error(`Unknown letter "${letter}" in word "${word}"`);
-                return;
+    // Set excitatory connections from letters to words
+    wordList.forEach((word, wordIdx) => {
+        word.toUpperCase().split('').forEach((letter, pos) => {
+            if (pos < 4) {
+                const letterIdx = letterToIndex[letter];
+                if (letterIdx !== undefined) {
+                    letterToWordWeights[pos][letterIdx][wordIdx] = params.LETTER_WORD_EXCITATION;
+                }
             }
-            letterToWordWeights[letterIndex][wordIndex] = params.LETTER_WORD_EXCITATION;
-            wordToLetterWeights[wordIndex][letterIndex] = params.WORD_LETTER_EXCITATION;
         });
     });
 
-    wordsLayer.weights = [letterToWordWeights];
+    wordsLayer.weights = letterToWordWeights;
 
     console.log("Model initialization complete");
-    console.log("Letter layer weights:", lettersLayer.map(l => l.weights));
-    console.log("Word layer weights:", wordsLayer.weights);
 }
 
 function runSimulation(inputWord) {
     console.log("Starting simulation with input:", inputWord);
+    
+    // Re-initialize model
     const params = getParameters();
-    fetchWordList();  // Ensure this is called before initializeModel
     initializeModel(params);
-
+    
     const activations = {
         letters: Array(4).fill().map(() => []),
         words: []
     };
 
-    // Prepare input
-    const input = inputWord.toUpperCase().padEnd(4, ' ').slice(0, 4).split('').map(char => {
+    // Create input features for each position
+    const inputFeatures = inputWord.toUpperCase().padEnd(4, ' ').split('').map((char, pos) => {
+        const features = new Array(14).fill(0);
         if (char === '?') {
-            return [0,1,0,0,1,0,0,1,0,0,0,0,0,1]; // ambiguous R or K
-        } else if (char === ' ') {
-            return new Array(14).fill(0);
-        } else {
-            return letters[letterToIndex[char]] || new Array(14).fill(0);
+            // Ambiguous R/K input
+            [1, 4, 7].forEach(idx => features[idx] = 1); // Common features
+        } else if (char !== ' ') {
+            const letterIdx = letterToIndex[char];
+            if (letterIdx !== undefined) {
+                letters[letterIdx].forEach((val, idx) => features[idx] = val);
+            }
         }
+        return features;
     });
 
-    const inputAbsence = input.map(features => features.map(f => 1 - f));
+    // Create absence features
+    const absenceFeatures = inputFeatures.map(features => 
+        features.map(f => 1 - f)
+    );
 
-    // Run simulation for 40 cycles
+    // Reset all layers before running simulation
+    lettersLayer.forEach(layer => layer.reset());
+    wordsLayer.reset();
+
+    // Run 40 cycles
     for (let cycle = 0; cycle < 40; cycle++) {
-        // Step through letter layers
-        const letterStates = lettersLayer.map((layer, i) => 
-            layer.step([input[i], inputAbsence[i]])
-        );
+        const letterStates = lettersLayer.map(layer => [...layer.state]);
+        const wordState = [...wordsLayer.state];
 
-        // Step through word layer
-        const wordState = wordsLayer.step([letterStates.flat()]);
+        lettersLayer.forEach((layer, pos) => {
+            layer.step([inputFeatures[pos], absenceFeatures[pos], wordState]);
+            activations.letters[pos].push([...layer.state]);
+        });
 
-        // Record activations
-        letterStates.forEach((state, i) => activations.letters[i].push(state));
-        activations.words.push(wordState);
+        wordsLayer.step(letterStates);
+        activations.words.push([...wordsLayer.state]);
     }
 
-    console.log("Simulation complete");
     return activations;
 }
 
-// UI Interaction
-document.getElementById('run-simulation').addEventListener('click', async () => {
+document.getElementById('run-simulation').addEventListener('click', () => {
     const inputWord = document.getElementById('input-word').value;
-    const activations = await runSimulation(inputWord);
-    updateChart(activations);
+    if (!wordList || wordList.length === 0) {
+        console.error("Word list not loaded yet");
+        alert("Please wait for word list to load");
+        return;
+    }
+    try {
+        const activations = runSimulation(inputWord);
+        updateChart(activations);
+    } catch (error) {
+        console.error("Error running simulation:", error);
+        alert("Error running simulation. Please check console for details.");
+    }
 });
 
 // Chart initialization and update
@@ -294,54 +338,69 @@ let chart;
 function initializeChart() {
     const ctx = document.getElementById('activation-chart').getContext('2d');
     chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: Array(40).fill().map((_, i) => i + 1),
-            datasets: []
+      type: 'line',
+      data: {
+        labels: Array(40).fill().map((_, i) => i),
+        datasets: []
+      },
+      options: {
+        responsive: true,
+        animation: false,
+        interaction: {
+          intersect: false,
+          mode: 'index'
         },
-        options: {
-            responsive: true,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Word Activations'
+          },
+          legend: {
+            position: 'right'
+          }
+        },
+        scales: {
+          x: {
+            display: true,
             title: {
-                display: true,
-                text: 'Word Activations'
-            },
-            scales: {
-                x: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: 'Cycle'
-                    }
-                },
-                y: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: 'Activation'
-                    },
-                    min: -0.2,
-                    max: 1
-                }
+              display: true,
+              text: 'Processing Cycles'
             }
+          },
+          y: {
+            display: true,
+            title: {
+              display: true,
+              text: 'Activation'
+            },
+            min: -0.2,
+            max: 0.8
+          }
         }
+      }
     });
-}
+  }
 
 function updateChart(activations) {
-    const wordsToShow = ['WORK', 'WORD', 'WEAK', 'WEAR'];
-    const colors = ['red', 'blue', 'green', 'purple'];
+  const wordsToShow = ['WORK', 'WORD', 'WEAK', 'WEAR'];
+  const colors = ['#000000', '#ff0000', '#0000ff', '#00ff00'];
+  const styles = ['solid', 'dashed', 'solid', 'solid'];
 
-    chart.data.datasets = wordsToShow.map((word, index) => ({
-        label: word,
-        data: activations.words.map(state => state[wordList.indexOf(word)]),
-        borderColor: colors[index],
-        fill: false
-    }));
+  chart.data.datasets = wordsToShow.map((word, index) => ({
+    label: word,
+    data: activations.words.map(state => state[wordList.indexOf(word)]),
+    borderColor: colors[index],
+    borderDash: styles[index] === 'dashed' ? [5, 5] : [],
+    borderWidth: 2,
+    fill: false,
+    tension: 0.3
+  }));
 
-    chart.update();
+  chart.update();
 }
 
-// Initialize the model and chart when the page loads
 window.addEventListener('load', () => {
-    initializeChart();
+    fetchWordList(); 
+    initializeModel(getParameters()); 
+    initializeChart(); 
 });

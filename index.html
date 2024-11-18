@@ -5,71 +5,146 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Activation Model</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.4.1/papaparse.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
         }
-        #input-section, #parameters-section, #visualization-section {
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .parameter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
             margin-bottom: 20px;
+        }
+        .parameter-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .parameter-item label {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .parameter-item input {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        #input-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #input-word {
+            padding: 8px;
+            font-size: 16px;
+            width: 150px;
+        }
+        #run-simulation {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #run-simulation:hover {
+            background-color: #45a049;
         }
         canvas {
             max-width: 100%;
+            background-color: white;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            padding: 10px;
         }
     </style>
 </head>
 <body>
     <h1>Interactive Activation Model</h1>
     
-    <div id="input-section">
+    <div class="section">
         <h2>Input</h2>
-        <input type="text" id="input-word" value="WOR?" placeholder="Enter a word">
-        <button id="run-simulation">Run Simulation</button>
+        <div id="input-section">
+            <input type="text" id="input-word" value="WOR?" placeholder="Enter a word">
+            <button id="run-simulation">Run Simulation</button>
+        </div>
     </div>
 
-    <div id="parameters-section">
+    <div class="section">
         <h2>Parameters</h2>
-        <label for="feature-letter-excitation">Feature-Letter Excitation:</label>
-        <input type="number" id="feature-letter-excitation" value="0.005" step="0.001">
-        
-        <label for="feature-letter-inhibition">Feature-Letter Inhibition:</label>
-        <input type="number" id="feature-letter-inhibition" value="0.15" step="0.01">
-        
-        <label for="letter-word-excitation">Letter-Word Excitation:</label>
-        <input type="number" id="letter-word-excitation" value="0.07" step="0.01">
-        
-        <label for="letter-word-inhibition">Letter-Word Inhibition:</label>
-        <input type="number" id="letter-word-inhibition" value="0.04" step="0.01">
-        
-        <label for="word-letter-excitation">Word-Letter Excitation:</label>
-        <input type="number" id="word-letter-excitation" value="0.3" step="0.1">
-        
-        <label for="word-letter-inhibition">Word-Letter Inhibition:</label>
-        <input type="number" id="word-letter-inhibition" value="0.0" step="0.1">
-        
-        <label for="word-word-inhibition">Word-Word Inhibition:</label>
-        <input type="number" id="word-word-inhibition" value="0.24" step="0.01">  <!-- Changed from 0.21 -->
-        
-        <label for="letter-letter-inhibition">Letter-Letter Inhibition:</label>
-        <input type="number" id="letter-letter-inhibition" value="0.0" step="0.1">
-        
-        <label for="min-activation">Min Activation:</label>
-        <input type="number" id="min-activation" value="-0.2" step="0.1">
-        
-        <label for="decay-rate">Decay Rate:</label>
-        <input type="number" id="decay-rate" value="0.07" step="0.01">
-        
-        <label for="rest-gain">Rest Gain:</label>
-        <input type="number" id="rest-gain" value="0.08" step="0.01">  <!-- Changed from 0.05 -->
+        <div class="parameter-grid">
+            <div class="parameter-item">
+                <label for="feature-letter-excitation">Feature-Letter Excitation:</label>
+                <input type="number" id="feature-letter-excitation" value="0.005" step="0.001">
+            </div>
+            
+            <div class="parameter-item">
+                <label for="feature-letter-inhibition">Feature-Letter Inhibition:</label>
+                <input type="number" id="feature-letter-inhibition" value="0.15" step="0.01">
+            </div>
+            
+            <div class="parameter-item">
+                <label for="letter-word-excitation">Letter-Word Excitation:</label>
+                <input type="number" id="letter-word-excitation" value="0.07" step="0.01">
+            </div>
+            
+            <div class="parameter-item">
+                <label for="letter-word-inhibition">Letter-Word Inhibition:</label>
+                <input type="number" id="letter-word-inhibition" value="0.04" step="0.01">
+            </div>
+            
+            <div class="parameter-item">
+                <label for="word-letter-excitation">Word-Letter Excitation:</label>
+                <input type="number" id="word-letter-excitation" value="0.3" step="0.1">
+            </div>
+            
+            <div class="parameter-item">
+                <label for="word-letter-inhibition">Word-Letter Inhibition:</label>
+                <input type="number" id="word-letter-inhibition" value="0.0" step="0.1">
+            </div>
+            
+            <div class="parameter-item">
+                <label for="word-word-inhibition">Word-Word Inhibition:</label>
+                <input type="number" id="word-word-inhibition" value="0.24" step="0.01">
+            </div>
+            
+            <div class="parameter-item">
+                <label for="letter-letter-inhibition">Letter-Letter Inhibition:</label>
+                <input type="number" id="letter-letter-inhibition" value="0.0" step="0.1">
+            </div>
+            
+            <div class="parameter-item">
+                <label for="min-activation">Min Activation:</label>
+                <input type="number" id="min-activation" value="-0.2" step="0.1">
+            </div>
+            
+            <div class="parameter-item">
+                <label for="decay-rate">Decay Rate:</label>
+                <input type="number" id="decay-rate" value="0.07" step="0.01">
+            </div>
+            
+            <div class="parameter-item">
+                <label for="rest-gain">Rest Gain:</label>
+                <input type="number" id="rest-gain" value="0.08" step="0.01">
+            </div>
+        </div>
     </div>
 
-    <div id="visualization-section">
+    <div class="section">
         <h2>Visualization</h2>
         <canvas id="activation-chart"></canvas>
     </div>
 
     <script src="iam.js"></script>
 </body>
-</html> 
+</html>

@@ -62,10 +62,13 @@ class IAPool {
 
     computeEffect(netInput) {
         return netInput.map((input, i) => {
+            const currentState = this.state[i];
             if (input > 0) {
-                return input * (this.maxValue - this.state[i]);
+                // Enhanced excitation for positive inputs
+                return input * (this.maxValue - currentState) * 1.5;
             } else {
-                return input * (this.state[i] - this.minValue);
+                // Enhanced inhibition for negative inputs
+                return input * (currentState - this.minValue) * 2.0;
             }
         });
     }
@@ -172,10 +175,10 @@ async function fetchWordList() {
 function fetchWordList() {
     // Hardcoded subset of words for testing
     const wordData = [
-        ["WORK", -0.5],
-        ["WORD", -0.6],
-        ["WEAK", -0.7],
-        ["WEAR", -0.65],
+        ["WORK", -0.3],  // Made more frequent
+        ["WORD", -0.35], 
+        ["WEAK", -0.45],
+        ["WEAR", -0.45],
         ["MADE", -0.55],
         ["MAKE", -0.5],
         ["TAKE", -0.45],
@@ -338,52 +341,56 @@ let chart;
 function initializeChart() {
     const ctx = document.getElementById('activation-chart').getContext('2d');
     chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: Array(40).fill().map((_, i) => i),
-        datasets: []
-      },
-      options: {
-        responsive: true,
-        animation: false,
-        interaction: {
-          intersect: false,
-          mode: 'index'
+        type: 'line',
+        data: {
+            labels: Array(40).fill().map((_, i) => i),
+            datasets: []
         },
-        plugins: {
-          title: {
-            display: true,
-            text: 'Word Activations'
-          },
-          legend: {
-            position: 'right'
-          }
-        },
-        scales: {
-          x: {
-            display: true,
-            title: {
-              display: true,
-              text: 'Processing Cycles'
-            }
-          },
-          y: {
-            display: true,
-            title: {
-              display: true,
-              text: 'Activation'
+        options: {
+            responsive: true,
+            animation: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Word Activations'
+                },
+                legend: {
+                    position: 'right'
+                }
             },
-            min: -0.2,
-            max: 0.8
-          }
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Processing Cycles'
+                    },
+                    min: 0,
+                    max: 40,
+                    ticks: {
+                        stepSize: 10
+                    }
+                },
+                y: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Activation'
+                    },
+                    min: -0.4,
+                    max: 0.8,
+                    ticks: {
+                        stepSize: 0.2
+                    }
+                }
+            }
         }
-      }
     });
-  }
+}
 
 function updateChart(activations) {
   const wordsToShow = ['WORK', 'WORD', 'WEAK', 'WEAR'];
-  const colors = ['#000000', '#ff0000', '#0000ff', '#00ff00'];
+  const colors = ['#CBC3E3', '#ff0000', '#ADD8E6', '#013220'];
   const styles = ['solid', 'dashed', 'solid', 'solid'];
 
   chart.data.datasets = wordsToShow.map((word, index) => ({

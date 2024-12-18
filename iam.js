@@ -1,3 +1,54 @@
+// Constants for model parameters
+const FEATURE_LETTER_EXCITATION = 0.005;
+const FEATURE_LETTER_INHIBITION = 0.15;
+const LETTER_WORD_EXCITATION = 0.07;
+const LETTER_WORD_INHIBITION = 0.04;
+const WORD_LETTER_EXCITATION = 0.3;
+const WORD_LETTER_INHIBITION = 0.0;
+const WORD_WORD_INHIBITION = 0.21;
+const LETTER_LETTER_INHIBITION = 0.0;
+const MIN_ACTIVATION = -0.2;
+const DECAY_RATE = 0.07;
+const REST_GAIN = 0.05;
+
+// Mask stimulus (combination of O and X)
+const MASK = [1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1];
+
+// Letter feature definitions
+const letters = {
+    'a': [1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0],
+    'b': [1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0],
+    'c': [1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    'd': [1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0],
+    'e': [1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    'f': [1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    'g': [1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+    'h': [0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0],
+    'i': [1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
+    'j': [0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0],
+    'k': [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+    'l': [0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    'm': [0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0],
+    'n': [0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1],
+    'o': [1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0],
+    'p': [1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+    'q': [1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1],
+    'r': [1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1],
+    's': [1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    't': [1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
+    'u': [0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0],
+    'v': [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0],
+    'w': [0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1],
+    'x': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+    'y': [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0],
+    'z': [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0]
+};
+
+// Helper function to create weight matrices
+function createWeightMatrix(inputSize, outputSize, value) {
+    return Array(inputSize).fill().map(() => Array(outputSize).fill(value));
+}
+
 class IAPool {
     constructor(size, weights = null, decayRate = 0.1, restingState = 0.0, maxValue = 1.0, minValue = -1.0, inhibitionStrength = 1.0) {
         this.size = size;
@@ -6,12 +57,20 @@ class IAPool {
         this.minValue = minValue;
         this.inhibitionStrength = inhibitionStrength;
         this.weights = weights;
-
-        this.restingState = Array.isArray(restingState) ? restingState : Array(size).fill(restingState);
+        
+        if (typeof restingState === 'number') {
+            this.restingState = Array(size).fill(restingState);
+        } else {
+            this.restingState = restingState;
+        }
+        
+        // Initialize inhibitory weights
         this.inhibitoryWeights = Array(size).fill().map(() => 
-            Array(size).fill(-inhibitionStrength).map((val, i, arr) => i === arr.indexOf(val) ? 0 : val)
-        );
-
+            Array(size).fill(-inhibitionStrength));
+        for(let i = 0; i < size; i++) {
+            this.inhibitoryWeights[i][i] = 0;
+        }
+        
         this.state = [...this.restingState];
     }
 
@@ -20,49 +79,28 @@ class IAPool {
     }
 
     computeNetInput(inputs) {
-        if (!Array.isArray(inputs) || !Array.isArray(this.weights) || 
-            inputs.length !== this.weights.length) {
-            console.error("Invalid inputs or weights", {inputs, weights: this.weights});
-            return new Array(this.size).fill(0);
-        }
-    
-        const inputSignal = new Array(this.size).fill(0);
-        
-        // Process each input source
-        for (let i = 0; i < inputs.length; i++) {
-            const input = inputs[i];
-            const weights = this.weights[i];
-            
-            if (!Array.isArray(input) || !Array.isArray(weights)) {
-                console.error(`Invalid input or weight matrix at index ${i}`);
-                continue;
-            }
-    
-            // Clip negative inputs to 0
-            const clippedInput = input.map(v => Math.max(0, v));
-            
-            // Compute dot product for this input source
-            for (let j = 0; j < this.size; j++) {
-                for (let k = 0; k < clippedInput.length; k++) {
-                    if (weights[k] && typeof weights[k][j] === 'number') {
-                        inputSignal[j] += clippedInput[k] * weights[k][j];
-                    }
+        // Calculate excitatory input
+        let inputSignal = Array(this.size).fill(0);
+        for(let i = 0; i < inputs.length; i++) {
+            const clippedInput = inputs[i].map(v => Math.max(0, v));
+            for(let j = 0; j < this.size; j++) {
+                for(let k = 0; k < clippedInput.length; k++) {
+                    inputSignal[j] += clippedInput[k] * this.weights[i][k][j];
                 }
             }
         }
-    
-        // Compute inhibitory signal within the pool
+
+        // Calculate inhibitory input
         const clippedState = this.state.map(v => Math.max(0, v));
-        const inhibitorySignal = this.inhibitoryWeights.map((row, i) => 
-            row.reduce((sum, weight, j) => sum + weight * clippedState[j], 0)
-        );
-    
+        const inhibitorySignal = this.inhibitoryWeights.map(row => 
+            row.reduce((sum, weight, i) => sum + weight * clippedState[i], 0));
+
         return inputSignal.map((val, i) => val + inhibitorySignal[i]);
     }
 
     computeEffect(netInput) {
         return netInput.map((input, i) => {
-            if (input > 0) {
+            if(input > 0) {
                 return input * (this.maxValue - this.state[i]);
             } else {
                 return input * (this.state[i] - this.minValue);
@@ -71,336 +109,262 @@ class IAPool {
     }
 
     computeActivation(effect) {
-        const decay = this.state.map((s, i) => this.decayRate * (s - this.restingState[i]));
-        return this.state.map((s, i) => 
-            Math.min(this.maxValue, Math.max(this.minValue, s - decay[i] + effect[i]))
-        );
+        const decay = this.state.map((s, i) => 
+            this.decayRate * (s - this.restingState[i]));
+        
+        return this.state.map((s, i) => {
+            const newActivation = s - decay[i] + effect[i];
+            return Math.max(this.minValue, Math.min(this.maxValue, newActivation));
+        });
     }
 
     step(inputs) {
-        if (!this.weights) {
-            throw new Error("Weights cannot be null");
-        }
-        if (inputs.length !== this.weights.length) {
-            console.error("Inputs:", inputs);
-            console.error("Weights length:", this.weights.length);
-            throw new Error(`Inputs must have the same number of top-level items as weights (${inputs.length} vs ${this.weights.length})`);
-        }
-    
+        if(!this.weights) throw new Error("weights cannot be None");
+        if(inputs.length !== this.weights.length) throw new Error("inputs must match weights");
+
         const netInput = this.computeNetInput(inputs);
         const effect = this.computeEffect(netInput);
         this.state = this.computeActivation(effect);
-    
         return this.state;
     }
 }
 
-// Model setup
-const letters = [
-    [1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0], // A
-    [1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0], // B
-    [1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0], // C
-    [1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0], // D
-    [1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0], // E
-    [1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0], // F
-    [1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0], // G
-    [0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0], // H
-    [1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0], // I
-    [1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0], // J
-    [0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0], // K
-    [0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0], // L
-    [0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0], // M
-    [0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0], // N
-    [1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0], // O
-    [1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0], // P
-    [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0], // Q
-    [1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1], // R
-    [1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0], // S
-    [1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0], // T
-    [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0], // U
-    [0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1], // V
-    [0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0], // W
-    [0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1], // X
-    [0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1], // Y
-    [1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1]  // Z
-];
-
-const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const letterToIndex = Object.fromEntries([
-    ...alphabet.split('').map((letter, index) => [letter, index]),
-    ...alphabet.toLowerCase().split('').map((letter, index) => [letter, index])
-]);
-
-let wordList = [];
-let wordFrequencies = [];
-
-// Initialize model components
-let lettersLayer = [];
-let wordsLayer;
-
-function getParameters() {
-    return {
-        FEATURE_LETTER_EXCITATION: parseFloat(document.getElementById('feature-letter-excitation').value),
-        FEATURE_LETTER_INHIBITION: parseFloat(document.getElementById('feature-letter-inhibition').value),
-        LETTER_WORD_EXCITATION: parseFloat(document.getElementById('letter-word-excitation').value),
-        LETTER_WORD_INHIBITION: parseFloat(document.getElementById('letter-word-inhibition').value),
-        WORD_LETTER_EXCITATION: parseFloat(document.getElementById('word-letter-excitation').value),
-        WORD_LETTER_INHIBITION: parseFloat(document.getElementById('word-letter-inhibition').value),
-        WORD_WORD_INHIBITION: parseFloat(document.getElementById('word-word-inhibition').value),
-        LETTER_LETTER_INHIBITION: parseFloat(document.getElementById('letter-letter-inhibition').value),
-        MIN_ACTIVATION: parseFloat(document.getElementById('min-activation').value),
-        DECAY_RATE: parseFloat(document.getElementById('decay-rate').value),
-        REST_GAIN: parseFloat(document.getElementById('rest-gain').value)
-    };
-}
-
-/*
-async function fetchWordList() {
-    const response = await fetch('https://cors-anywhere.herokuapp.com/https://docs.google.com/spreadsheets/d/e/2PACX-1vRFeSK1vBTykGB_YxxYxbZOvaSZZRgyWMPCXZ938PqhjvW8luo3dVW2wvyLlfqdJoiaskMNP86SL-LJ/pub?gid=0&single=true&output=csv');
-    const data = await response.text();
-    const rows = data.split('\n').slice(1); // Skip header row
-    wordList = [];
-    wordFrequencies = [];
-    rows.forEach(row => {
-        const [word, frequency] = row.split(',');
-        wordList.push(word);
-        wordFrequencies.push(parseFloat(frequency));
-    });
-}
-*/
-
-function fetchWordList() {
-    // Hardcoded subset of words for testing
-    const wordData = [
-        ["WORK", -0.5],
-        ["WORD", -0.6],
-        ["WEAK", -0.7],
-        ["WEAR", -0.65],
-        ["MADE", -0.55],
-        ["MAKE", -0.5],
-        ["TAKE", -0.45],
-        ["TIME", -0.4],
-        ["COME", -0.5],
-        ["SOME", -0.55]
-    ];
-    
-    wordList = wordData.map(([word, _]) => word);
-    wordFrequencies = wordData.map(([_, freq]) => freq);
-    console.log("Fetched word list:", wordList);
-    console.log("Fetched word frequencies:", wordFrequencies);
-}
-
-function createWeightMatrix(fromSize, toSize, excitation, inhibition) {
-    return Array(fromSize).fill().map(() => 
-        Array(toSize).fill(inhibition)
-    );
-}
-
-function initializeModel(params) {
-    console.log("Initializing model with params:", params);
-    
-    // Initialize letter layers
-    lettersLayer = [];
-    for (let i = 0; i < 4; i++) {
-        // Create the letter pool
-        const letterPool = new IAPool(26, null, params.DECAY_RATE, 0, 1, params.MIN_ACTIVATION, params.LETTER_LETTER_INHIBITION);
+class InteractiveActivationModel {
+    constructor() {
+        // Initialize feature-to-letter weights
+        this.featureToLetterWeights = this.initializeFeatureToLetterWeights();
+        this.letterToWordWeights = this.initializeLetterWordWeights();
+        this.wordToLetterWeights = this.initializeWordLetterWeights();
         
-        // Create feature-to-letter weight matrices
-        const featurePresentWeights = Array(14).fill().map(() => Array(26).fill(0));
-        const featureAbsentWeights = Array(14).fill().map(() => Array(26).fill(0));
+        // Initialize letter pools (one for each position)
+        this.letterPools = Array(4).fill().map((_, i) => 
+            new IAPool(26, [
+                this.featureToLetterWeights, 
+                this.getAbsenceWeights(this.featureToLetterWeights),
+                this.wordToLetterWeights[i]
+            ], DECAY_RATE, 0, 1.0, MIN_ACTIVATION, LETTER_LETTER_INHIBITION));
         
-        // Fill in the feature weights
-        letters.forEach((letterFeatures, letterIdx) => {
-            letterFeatures.forEach((feature, featureIdx) => {
-                featurePresentWeights[featureIdx][letterIdx] = feature ? 
-                    params.FEATURE_LETTER_EXCITATION : -params.FEATURE_LETTER_INHIBITION;
-                featureAbsentWeights[featureIdx][letterIdx] = feature ? 
-                    -params.FEATURE_LETTER_INHIBITION : params.FEATURE_LETTER_EXCITATION;
+        // Initialize word pool with proper resting states
+        const restingStates = this.initializeWordRestingStates();
+        this.wordPool = new IAPool(
+            1179, 
+            this.letterToWordWeights, 
+            DECAY_RATE, 
+            restingStates, 
+            1.0, 
+            MIN_ACTIVATION, 
+            WORD_WORD_INHIBITION
+        );
+    }
+
+    // Create inverted weights for feature absence
+    getAbsenceWeights(weights) {
+        return weights.map(row => row.map(w => -w));
+    }
+
+    // Initialize feature-to-letter weight matrix
+    initializeFeatureToLetterWeights() {
+        const letterArray = Object.values(letters);
+        const weights = Array(14).fill().map(() => Array(26).fill(0));
+        
+        for(let i = 0; i < letterArray.length; i++) {
+            for(let j = 0; j < 14; j++) {
+                weights[j][i] = letterArray[i][j] ? 
+                    FEATURE_LETTER_EXCITATION : 
+                    -FEATURE_LETTER_INHIBITION;
+            }
+        }
+        return weights;
+    }
+
+    // Initialize letter-to-word weights for all 4 positions
+    initializeLetterWordWeights() {
+        const weights = Array(4).fill().map(() => 
+            Array(26).fill().map(() => Array(1179).fill(-LETTER_WORD_INHIBITION))
+        );
+        
+        // Set excitatory connections based on word list
+        this.getWordList().forEach((word, wordIndex) => {
+            for(let pos = 0; pos < 4; pos++) {
+                const letterIndex = this.letterToIndex(word[pos]);
+                weights[pos][letterIndex][wordIndex] = LETTER_WORD_EXCITATION;
+            }
+        });
+        
+        return weights;
+    }
+
+    // Initialize word-to-letter weights
+    initializeWordLetterWeights() {
+        const weights = Array(4).fill().map(() => 
+            Array(1179).fill().map(() => Array(26).fill(-WORD_LETTER_INHIBITION))
+        );
+
+        // Set excitatory connections based on word list
+        this.getWordList().forEach((word, wordIndex) => {
+            for(let pos = 0; pos < 4; pos++) {
+                const letterIndex = this.letterToIndex(word[pos]);
+                weights[pos][wordIndex][letterIndex] = WORD_LETTER_EXCITATION;
+            }
+        });
+
+        return weights;
+    }
+
+    // Initialize resting states for words based on frequency
+    initializeWordRestingStates() {
+        // For demo, using placeholder frequencies
+        // In real implementation, these would come from word frequency data
+        return Array(1179).fill().map(() => 
+            -0.1 - Math.random() * 0.4); // Random values between -0.1 and -0.5
+    }
+
+    // Helper to convert letter to index
+    letterToIndex(letter) {
+        return letter.charCodeAt(0) - 'a'.charCodeAt(0);
+    }
+
+    // Helper to get word list (placeholder implementation)
+    getWordList() {
+        return [
+            'have', 'gave', 'save', 'male', 'move', 'work', 'word', 'weak', 'wear'
+            // ... would contain all 1179 four-letter words
+        ];
+    }
+
+    stepModel(inputFeatures, wordLayer = true) {
+        const letterStates = this.letterPools.map(pool => [...pool.state]);
+        const wordState = wordLayer ? [...this.wordPool.state] : Array(1179).fill(0);
+        
+        // Update letter pools
+        this.letterPools.forEach((pool, i) => {
+            const input = [
+                inputFeatures[i], 
+                this.getAbsenceWeights([inputFeatures[i]])[0], 
+                wordState
+            ];
+            pool.step(input);
+        });
+        
+        // Update word pool if enabled
+        if(wordLayer) {
+            this.wordPool.step(letterStates);
+        }
+    }
+
+    runTrial(stimulus, maskDuration, targetIndices, enableWordLayer = true) {
+        const activations = targetIndices.map(() => []);
+        
+        // Reset state
+        this.letterPools.forEach(pool => pool.reset());
+        this.wordPool.reset();
+        
+        // Run simulation for specified duration
+        for(let t = 0; t < maskDuration; t++) {
+            if(t < 20) {
+                this.stepModel(stimulus, enableWordLayer);
+            } else {
+                this.stepModel([MASK, MASK, MASK, MASK], enableWordLayer);
+            }
+            
+            targetIndices.forEach((index, i) => {
+                activations[i].push(enableWordLayer ? 
+                    this.wordPool.state[index] : 
+                    this.letterPools[index >> 8].state[index & 0xFF]);
             });
-        });
-
-        // Create word-to-letter weight matrix for this position
-        const wordToLetterWeights = Array(wordList.length).fill().map(() => Array(26).fill(-params.WORD_LETTER_INHIBITION));
+        }
         
-        // Set excitatory connections from words to letters
-        wordList.forEach((word, wordIdx) => {
-            if (word[i]) {
-                const letterIdx = letterToIndex[word[i].toUpperCase()];
-                if (letterIdx !== undefined) {
-                    wordToLetterWeights[wordIdx][letterIdx] = params.WORD_LETTER_EXCITATION;
-                }
-            }
-        });
-
-        letterPool.weights = [featurePresentWeights, featureAbsentWeights, wordToLetterWeights];
-        lettersLayer.push(letterPool);
+        return activations;
     }
 
-    // Initialize word layer with resting states
-    const restingState = wordFrequencies.map(freq => freq * params.REST_GAIN);
-    wordsLayer = new IAPool(wordList.length, null, params.DECAY_RATE, restingState, 1, 
-        params.MIN_ACTIVATION, params.WORD_WORD_INHIBITION);
+    // Core experiment implementations
+    runReadVsE() {
+        const readFeatures = ['r','e','a','d'].map(c => letters[c]);
+        const blankFeatures = Array(14).fill(0);
+        
+        // Run READ condition
+        const eInReadActivation = this.runTrial(
+            readFeatures,
+            40,
+            [0x0104], // E in second position 
+            true
+        )[0];
+        
+        // Run E alone condition
+        const features = [blankFeatures, letters['e'], blankFeatures, blankFeatures];
+        const eAloneActivation = this.runTrial(
+            features,
+            40,
+            [0x0104], // E in second position
+            false  
+        )[0];
 
-    // Create letter-to-word weight matrices
-    const letterToWordWeights = Array(4).fill().map(() => 
-        Array(26).fill().map(() => Array(wordList.length).fill(-params.LETTER_WORD_INHIBITION))
-    );
+        return {
+            data: [eInReadActivation, eAloneActivation],
+            labels: ['E in READ', 'E alone']
+        };
+    }
 
-    // Set excitatory connections from letters to words
-    wordList.forEach((word, wordIdx) => {
-        word.toUpperCase().split('').forEach((letter, pos) => {
-            if (pos < 4) {
-                const letterIdx = letterToIndex[letter];
-                if (letterIdx !== undefined) {
-                    letterToWordWeights[pos][letterIdx][wordIdx] = params.LETTER_WORD_EXCITATION;
-                }
-            }
-        });
-    });
+    runMaveVsE() {
+        const maveFeatures = ['m','a','v','e'].map(c => letters[c]);
+        const blankFeatures = Array(14).fill(0);
+        
+        // Run MAVE condition
+        const eInMaveActivation = this.runTrial(
+            maveFeatures,
+            40,
+            [0x0304], // E in fourth position
+            true
+        )[0];
+        
+        // Run E alone condition
+        const features = [blankFeatures, blankFeatures, blankFeatures, letters['e']];
+        const eAloneActivation = this.runTrial(
+            features,
+            40,
+            [0x0304], // E in fourth position
+            false
+        )[0];
 
-    wordsLayer.weights = letterToWordWeights;
+        return {
+            data: [eInMaveActivation, eAloneActivation],
+            labels: ['E in MAVE', 'E alone']
+        };
+    }
 
-    console.log("Model initialization complete");
+    runRichGetRicher() {
+        const maveFeatures = ['m','a','v','e'].map(c => letters[c]);
+        const wordIndices = ['have', 'gave', 'save'].map(w => 
+            this.getWordList().indexOf(w));
+            
+        const activations = this.runTrial(
+            maveFeatures,
+            40,
+            wordIndices,
+            true
+        );
+
+        return {
+            data: activations,
+            labels: ['HAVE', 'GAVE', 'SAVE']
+        };
+    }
+
+    runGangEffect() {
+        const maveFeatures = ['m','a','v','e'].map(c => letters[c]);
+        const wordIndices = ['male', 'move', 'save'].map(w => 
+            this.getWordList().indexOf(w));
+            
+        const activations = this.runTrial(
+            maveFeatures,
+            40,
+            wordIndices,
+            true
+        );
+
+        return {
+            data: activations,
+            labels: ['MALE', 'MOVE', 'SAVE']
+        };
+    }
 }
-
-function runSimulation(inputWord) {
-    console.log("Starting simulation with input:", inputWord);
-    
-    // Re-initialize model
-    const params = getParameters();
-    initializeModel(params);
-    
-    const activations = {
-        letters: Array(4).fill().map(() => []),
-        words: []
-    };
-
-    // Create input features for each position
-    const inputFeatures = inputWord.toUpperCase().padEnd(4, ' ').split('').map((char, pos) => {
-        const features = new Array(14).fill(0);
-        if (char === '?') {
-            // Ambiguous R/K input
-            [1, 4, 7].forEach(idx => features[idx] = 1); // Common features
-        } else if (char !== ' ') {
-            const letterIdx = letterToIndex[char];
-            if (letterIdx !== undefined) {
-                letters[letterIdx].forEach((val, idx) => features[idx] = val);
-            }
-        }
-        return features;
-    });
-
-    // Create absence features
-    const absenceFeatures = inputFeatures.map(features => 
-        features.map(f => 1 - f)
-    );
-
-    // Reset all layers before running simulation
-    lettersLayer.forEach(layer => layer.reset());
-    wordsLayer.reset();
-
-    // Run 40 cycles
-    for (let cycle = 0; cycle < 40; cycle++) {
-        const letterStates = lettersLayer.map(layer => [...layer.state]);
-        const wordState = [...wordsLayer.state];
-
-        lettersLayer.forEach((layer, pos) => {
-            layer.step([inputFeatures[pos], absenceFeatures[pos], wordState]);
-            activations.letters[pos].push([...layer.state]);
-        });
-
-        wordsLayer.step(letterStates);
-        activations.words.push([...wordsLayer.state]);
-    }
-
-    return activations;
-}
-
-document.getElementById('run-simulation').addEventListener('click', () => {
-    const inputWord = document.getElementById('input-word').value;
-    if (!wordList || wordList.length === 0) {
-        console.error("Word list not loaded yet");
-        alert("Please wait for word list to load");
-        return;
-    }
-    try {
-        const activations = runSimulation(inputWord);
-        updateChart(activations);
-    } catch (error) {
-        console.error("Error running simulation:", error);
-        alert("Error running simulation. Please check console for details.");
-    }
-});
-
-// Chart initialization and update
-let chart;
-
-function initializeChart() {
-    const ctx = document.getElementById('activation-chart').getContext('2d');
-    chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: Array(40).fill().map((_, i) => i),
-        datasets: []
-      },
-      options: {
-        responsive: true,
-        animation: false,
-        interaction: {
-          intersect: false,
-          mode: 'index'
-        },
-        plugins: {
-          title: {
-            display: true,
-            text: 'Word Activations'
-          },
-          legend: {
-            position: 'right'
-          }
-        },
-        scales: {
-          x: {
-            display: true,
-            title: {
-              display: true,
-              text: 'Processing Cycles'
-            }
-          },
-          y: {
-            display: true,
-            title: {
-              display: true,
-              text: 'Activation'
-            },
-            min: -0.2,
-            max: 0.8
-          }
-        }
-      }
-    });
-  }
-
-function updateChart(activations) {
-  const wordsToShow = ['WORK', 'WORD', 'WEAK', 'WEAR'];
-  const colors = ['#000000', '#ff0000', '#0000ff', '#00ff00'];
-  const styles = ['solid', 'dashed', 'solid', 'solid'];
-
-  chart.data.datasets = wordsToShow.map((word, index) => ({
-    label: word,
-    data: activations.words.map(state => state[wordList.indexOf(word)]),
-    borderColor: colors[index],
-    borderDash: styles[index] === 'dashed' ? [5, 5] : [],
-    borderWidth: 2,
-    fill: false,
-    tension: 0.3
-  }));
-
-  chart.update();
-}
-
-window.addEventListener('load', () => {
-    fetchWordList(); 
-    initializeModel(getParameters()); 
-    initializeChart(); 
-});

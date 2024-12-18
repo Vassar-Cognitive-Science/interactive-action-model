@@ -8,68 +8,137 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
-        #input-section, #parameters-section, #visualization-section {
-            margin-bottom: 20px;
+        .experiment-container {
+            margin-bottom: 40px;
         }
-        canvas {
-            max-width: 100%;
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            margin: 20px 0;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        select {
+            padding: 5px;
+            margin: 5px;
         }
     </style>
 </head>
 <body>
-    <h1>Interactive Activation Model</h1>
-    
-    <div id="input-section">
-        <h2>Input</h2>
-        <input type="text" id="input-word" value="WOR?" placeholder="Enter a word">
-        <button id="run-simulation">Run Simulation</button>
+    <h1>Interactive Activation Model Experiments</h1>
+
+    <div class="controls">
+        <select id="experimentSelect">
+            <option value="readVsE">Single Letter (E) vs Word (READ)</option>
+            <option value="maveVsE">Single Letter (E) vs Pseudoword (MAVE)</option>
+            <option value="richGetRicher">Rich Get Richer Effect</option>
+            <option value="gangEffect">Gang Effect</option>
+        </select>
+        <button onclick="runSelectedExperiment()">Run Experiment</button>
     </div>
 
-    <div id="parameters-section">
-        <h2>Parameters</h2>
-        <label for="feature-letter-excitation">Feature-Letter Excitation:</label>
-        <input type="number" id="feature-letter-excitation" value="0.005" step="0.001">
-        
-        <label for="feature-letter-inhibition">Feature-Letter Inhibition:</label>
-        <input type="number" id="feature-letter-inhibition" value="0.15" step="0.01">
-        
-        <label for="letter-word-excitation">Letter-Word Excitation:</label>
-        <input type="number" id="letter-word-excitation" value="0.07" step="0.01">
-        
-        <label for="letter-word-inhibition">Letter-Word Inhibition:</label>
-        <input type="number" id="letter-word-inhibition" value="0.04" step="0.01">
-        
-        <label for="word-letter-excitation">Word-Letter Excitation:</label>
-        <input type="number" id="word-letter-excitation" value="0.3" step="0.1">
-        
-        <label for="word-letter-inhibition">Word-Letter Inhibition:</label>
-        <input type="number" id="word-letter-inhibition" value="0.0" step="0.1">
-        
-        <label for="word-word-inhibition">Word-Word Inhibition:</label>
-        <input type="number" id="word-word-inhibition" value="0.21" step="0.01">
-        
-        <label for="letter-letter-inhibition">Letter-Letter Inhibition:</label>
-        <input type="number" id="letter-letter-inhibition" value="0.0" step="0.1">
-        
-        <label for="min-activation">Min Activation:</label>
-        <input type="number" id="min-activation" value="-0.2" step="0.1">
-        
-        <label for="decay-rate">Decay Rate:</label>
-        <input type="number" id="decay-rate" value="0.07" step="0.01">
-        
-        <label for="rest-gain">Rest Gain:</label>
-        <input type="number" id="rest-gain" value="0.05" step="0.01">
-    </div>
-
-    <div id="visualization-section">
-        <h2>Visualization</h2>
-        <canvas id="activation-chart"></canvas>
+    <div class="experiment-container">
+        <div class="chart-container">
+            <canvas id="activationChart"></canvas>
+        </div>
+        <div id="experimentDescription"></div>
     </div>
 
     <script src="iam.js"></script>
+    <script>
+        let chart = null;
+
+        function createChart(data, labels, title) {
+            if (chart) {
+                chart.destroy();
+            }
+
+            const ctx = document.getElementById('activationChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: data[0].length}, (_, i) => i),
+                    datasets: labels.map((label, i) => ({
+                        label: label,
+                        data: data[i],
+                        borderColor: getColor(i),
+                        fill: false,
+                        tension: 0.1
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: title
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Activation'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Steps'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function getColor(index) {
+            const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'];
+            return colors[index % colors.length];
+        }
+
+        function runSelectedExperiment() {
+            const experimentType = document.getElementById('experimentSelect').value;
+            const model = new InteractiveActivationModel();
+
+            let data, labels, title;
+            switch(experimentType) {
+                case 'readVsE':
+                    ({data, labels} = model.runReadVsE());
+                    title = 'Letter Recognition: E in READ vs E Alone';
+                    break;
+                case 'maveVsE':
+                    ({data, labels} = model.runMaveVsE());
+                    title = 'Letter Recognition: E in MAVE vs E Alone';
+                    break;
+                case 'richGetRicher':
+                    ({data, labels} = model.runRichGetRicher());
+                    title = 'Rich Get Richer Effect with MAVE';
+                    break;
+                case 'gangEffect':
+                    ({data, labels} = model.runGangEffect());
+                    title = 'Gang Effect with MAVE';
+                    break;
+            }
+            
+            createChart(data, labels, title);
+        }
+
+        // Run initial experiment on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            runSelectedExperiment();
+        });
+    </script>
 </body>
-</html> 
+</html>

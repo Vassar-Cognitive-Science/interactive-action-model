@@ -3,37 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net">
     <title>Interactive Activation Model</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .experiment-container {
-            margin-bottom: 40px;
-        }
-        .chart-container {
-            position: relative;
-            height: 400px;
-            width: 100%;
-            margin: 20px 0;
-        }
-        .controls {
-            margin: 20px 0;
-        }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            cursor: pointer;
-        }
-        select {
-            padding: 5px;
-            margin: 5px;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <h1>Interactive Activation Model Experiments</h1>
@@ -45,7 +17,7 @@
             <option value="richGetRicher">Rich Get Richer Effect</option>
             <option value="gangEffect">Gang Effect</option>
         </select>
-        <button onclick="runSelectedExperiment()">Run Experiment</button>
+        <button id="runButton">Run Experiment</button>
     </div>
 
     <div class="experiment-container">
@@ -55,90 +27,8 @@
         <div id="experimentDescription"></div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="iam.js"></script>
-    <script>
-        let chart = null;
-
-        function createChart(data, labels, title) {
-            if (chart) {
-                chart.destroy();
-            }
-
-            const ctx = document.getElementById('activationChart').getContext('2d');
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: Array.from({length: data[0].length}, (_, i) => i),
-                    datasets: labels.map((label, i) => ({
-                        label: label,
-                        data: data[i],
-                        borderColor: getColor(i),
-                        fill: false,
-                        tension: 0.1
-                    }))
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: title
-                        }
-                    },
-                    scales: {
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Activation'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Time Steps'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function getColor(index) {
-            const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'];
-            return colors[index % colors.length];
-        }
-
-        function runSelectedExperiment() {
-            const experimentType = document.getElementById('experimentSelect').value;
-            const model = new InteractiveActivationModel();
-
-            let data, labels, title;
-            switch(experimentType) {
-                case 'readVsE':
-                    ({data, labels} = model.runReadVsE());
-                    title = 'Letter Recognition: E in READ vs E Alone';
-                    break;
-                case 'maveVsE':
-                    ({data, labels} = model.runMaveVsE());
-                    title = 'Letter Recognition: E in MAVE vs E Alone';
-                    break;
-                case 'richGetRicher':
-                    ({data, labels} = model.runRichGetRicher());
-                    title = 'Rich Get Richer Effect with MAVE';
-                    break;
-                case 'gangEffect':
-                    ({data, labels} = model.runGangEffect());
-                    title = 'Gang Effect with MAVE';
-                    break;
-            }
-            
-            createChart(data, labels, title);
-        }
-
-        // Run initial experiment on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            runSelectedExperiment();
-        });
-    </script>
+    <script src = "app.js"></script>
 </body>
 </html>

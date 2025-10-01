@@ -1,0 +1,241 @@
+.simulation-runner {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.simulation-controls {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.input-mode-toggle {
+    display: flex;
+    gap: 0;
+    border: 2px solid #3498db;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.mode-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background-color: white;
+    color: #3498db;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mode-btn:hover:not(:disabled) {
+    background-color: #ebf5fb;
+}
+
+.mode-btn.active {
+    background-color: #3498db;
+    color: white;
+}
+
+.mode-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.feature-editor-panel {
+    width: 100%;
+}
+
+.input-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 200px;
+}
+
+.input-section label {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.input-section input {
+    padding: 0.5rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    width: 120px;
+}
+
+.input-section input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.control-buttons button {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.btn-primary {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #27ae60;
+}
+
+.btn-warning {
+    background-color: #f39c12;
+    color: white;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background-color: #e67e22;
+}
+
+.btn-secondary {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: #2980b9;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background-color: #c0392b;
+}
+
+.btn-toggle {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.btn-toggle:hover:not(:disabled) {
+    background-color: #7f8c8d;
+}
+
+.btn-toggle.active {
+    background-color: #9b59b6;
+}
+
+.btn-toggle.active:hover {
+    background-color: #8e44ad;
+}
+
+.control-buttons button:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.speed-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.speed-control label {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.speed-control input[type="range"] {
+    width: 150px;
+}
+
+.speed-control span {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    min-width: 50px;
+}
+
+.step-counter {
+    font-weight: 600;
+    color: #2c3e50;
+    padding: 0.5rem 1rem;
+    background-color: #ecf0f1;
+    border-radius: 4px;
+}
+
+.mask-indicator {
+    color: #e74c3c;
+    font-size: 0.85rem;
+}
+
+.simulation-content {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+.simulation-content.show-parameters {
+    grid-template-columns: 350px 1fr;
+}
+
+.parameters-section {
+    min-width: 0;
+}
+
+.visualization-panel {
+    min-width: 0;
+}
+
+.chart-panel {
+    width: 100%;
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 1024px) {
+    .simulation-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .input-section {
+        width: 100%;
+    }
+
+    .control-buttons {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .speed-control {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .simulation-content {
+        grid-template-columns: 1fr;
+    }
+}

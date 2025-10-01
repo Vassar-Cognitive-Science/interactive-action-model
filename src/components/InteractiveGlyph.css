@@ -1,0 +1,21 @@
+.interactive-glyph {
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.interactive-feature {
+    transition: opacity 0.15s;
+}
+
+.interactive-feature:hover {
+    opacity: 0.8;
+}
+
+.feature-hit-area {
+    cursor: pointer;
+}
+
+.feature-hit-area:hover {
+    fill: rgba(52, 152, 219, 0.1);
+}

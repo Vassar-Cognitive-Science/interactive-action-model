@@ -1,0 +1,44 @@
+.letter-input {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.letter-box {
+    width: 28px;
+    height: 32px;
+    font-size: 1rem;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    border: 2px solid #3498db;
+    border-radius: 4px;
+    background-color: white;
+    transition: all 0.2s;
+    padding: 0;
+}
+
+.letter-box:focus {
+    outline: none;
+    border-color: #2980b9;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    transform: scale(1.05);
+}
+
+.letter-box:disabled {
+    background-color: #ecf0f1;
+    border-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+.letter-box::placeholder {
+    color: #bdc3c7;
+    font-weight: normal;
+}
+
+@media (max-width: 768px) {
+    .letter-box {
+        width: 26px;
+        height: 30px;
+        font-size: 0.9rem;
+    }
+}

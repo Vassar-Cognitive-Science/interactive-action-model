@@ -29,9 +29,14 @@ export const letters = {
     'z': [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0]
 };
 
-// Four-letter word list for the model
-// This is a subset - full implementation would include all 1179 four-letter words
-export const WORD_LIST = [
+// Word list is now imported from wordFrequencies.js
+// which is generated from words.csv
+import { WORD_LIST_WITH_FREQ } from './wordFrequencies.js';
+
+export const WORD_LIST = WORD_LIST_WITH_FREQ.map(d => d.word);
+
+// Legacy export (kept for compatibility, but no longer used)
+export const WORD_LIST_OLD = [
     'have', 'gave', 'save', 'male', 'move', 'work', 'word', 'weak', 'wear',
     'able', 'back', 'ball', 'bank', 'base', 'bear', 'beat', 'been', 'bell',
     'best', 'bill', 'bird', 'blue', 'boat', 'body', 'book', 'born', 'both',

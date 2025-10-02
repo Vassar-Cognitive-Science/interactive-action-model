@@ -1,5 +1,6 @@
 import { IAPool } from './IAPool.js';
-import { letters, WORD_LIST, letterToIndex } from './data.js';
+import { letters, letterToIndex } from './data.js';
+import { WORD_LIST_WITH_FREQ } from './wordFrequencies.js';
 import {
     FEATURE_LETTER_EXCITATION,
     FEATURE_LETTER_INHIBITION,
@@ -11,6 +12,7 @@ import {
     LETTER_LETTER_INHIBITION,
     MIN_ACTIVATION,
     DECAY_RATE,
+    REST_GAIN,
     MASK
 } from './constants.js';
 
@@ -24,14 +26,16 @@ import {
  */
 export class InteractiveActivationModel {
     /**
-     * @param {Array<string>} wordList - Optional custom word list
+     * @param {Array<{word: string, frequency: number}>} wordData - Optional custom word list with frequencies
      */
-    constructor(wordList = WORD_LIST) {
-        this.wordList = wordList;
+    constructor(wordData = WORD_LIST_WITH_FREQ) {
+        this.wordData = wordData;
+        this.wordList = wordData.map(d => d.word);
         this.numPositions = 4; // Four-letter words
 
         // Initialize weight matrices
         this.featureToLetterWeights = this.initializeFeatureToLetterWeights();
+        this.featureAbsenceToLetterWeights = this.initializeFeatureAbsenceToLetterWeights();
         this.letterToWordWeights = this.initializeLetterWordWeights();
         this.wordToLetterWeights = this.initializeWordLetterWeights();
 
@@ -41,7 +45,7 @@ export class InteractiveActivationModel {
                 26, // 26 letters
                 [
                     this.featureToLetterWeights,
-                    this.getAbsenceWeights(this.featureToLetterWeights),
+                    this.featureAbsenceToLetterWeights,
                     this.wordToLetterWeights[i]
                 ],
                 DECAY_RATE,
@@ -66,15 +70,9 @@ export class InteractiveActivationModel {
     }
 
     /**
-     * Create inverted weights for feature absence
-     */
-    getAbsenceWeights(weights) {
-        return weights.map(row => row.map(w => -w));
-    }
-
-    /**
      * Initialize feature-to-letter weight matrix
      * Maps 14 visual features to 26 letters
+     * Feature PRESENT (1) -> excitation, ABSENT (0) -> inhibition
      */
     initializeFeatureToLetterWeights() {
         const letterArray = Object.values(letters);
@@ -83,6 +81,27 @@ export class InteractiveActivationModel {
         for (let i = 0; i < letterArray.length; i++) {
             for (let j = 0; j < 14; j++) {
                 weights[j][i] = letterArray[i][j] ?
+                    FEATURE_LETTER_EXCITATION :
+                    -FEATURE_LETTER_INHIBITION;
+            }
+        }
+
+        return weights;
+    }
+
+    /**
+     * Initialize feature-absence-to-letter weight matrix
+     * Inverts the binary letter features FIRST, then applies weight mapping
+     * This matches Python: w_from_features_to_letters_absence = 1 - w_from_features_to_letters
+     */
+    initializeFeatureAbsenceToLetterWeights() {
+        const letterArray = Object.values(letters);
+        const weights = Array(14).fill().map(() => Array(26).fill(0));
+
+        for (let i = 0; i < letterArray.length; i++) {
+            for (let j = 0; j < 14; j++) {
+                // Invert the binary feature value (1 - value), then map to weights
+                weights[j][i] = (1 - letterArray[i][j]) ?
                     FEATURE_LETTER_EXCITATION :
                     -FEATURE_LETTER_INHIBITION;
             }
@@ -134,14 +153,10 @@ export class InteractiveActivationModel {
     /**
      * Initialize resting states for words based on frequency
      * More frequent words have higher (less negative) resting states
+     * Matches Python: resting_state = frequency * REST_GAIN
      */
     initializeWordRestingStates() {
-        // For now, use simple approach: earlier words in list are more frequent
-        // In full implementation, would use actual frequency data
-        return this.wordList.map((word, i) => {
-            const frequencyFactor = 1.0 - (i / this.wordList.length);
-            return -0.1 - (0.4 * (1 - frequencyFactor));
-        });
+        return this.wordData.map(d => d.frequency * REST_GAIN);
     }
 
     /**
@@ -156,11 +171,16 @@ export class InteractiveActivationModel {
             Array(this.wordList.length).fill(0);
 
         // Update letter pools
+        // Compute absence features: 1 - feature_value for each feature
+        const absenceFeatures = inputFeatures.map(features =>
+            features.map(f => 1 - f)
+        );
+
         this.letterPools.forEach((pool, i) => {
             const input = [
-                inputFeatures[i],
-                this.getAbsenceWeights([inputFeatures[i]])[0],
-                wordState
+                inputFeatures[i],      // Feature presence
+                absenceFeatures[i],    // Feature absence (1 - feature)
+                wordState              // Top-down from words
             ];
             pool.step(input);
         });

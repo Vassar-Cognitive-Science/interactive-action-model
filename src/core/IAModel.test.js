@@ -50,7 +50,7 @@ describe('InteractiveActivationModel', () => {
         });
 
         it('should set correct excitatory connections for known words', () => {
-            const model = new InteractiveActivationModel(['test']);
+            const model = new InteractiveActivationModel([{word: 'test', frequency: -0.5}]);
             // Check that 't' at position 0 excites 'test'
             const tIndex = letterToIndex('t');
             expect(model.letterToWordWeights[0][tIndex][0]).toBeGreaterThan(0);

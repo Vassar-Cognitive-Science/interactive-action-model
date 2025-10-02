@@ -1,4 +1,5 @@
 import React from 'react';
+import * as constants from '../core/constants.js';
 import './Parameters.css';
 
 /**
@@ -19,10 +20,30 @@ export default function Parameters({
         });
     };
 
+    const handleResetDefaults = () => {
+        onParametersChange({
+            FEATURE_LETTER_EXCITATION: constants.FEATURE_LETTER_EXCITATION,
+            FEATURE_LETTER_INHIBITION: constants.FEATURE_LETTER_INHIBITION,
+            LETTER_WORD_EXCITATION: constants.LETTER_WORD_EXCITATION,
+            LETTER_WORD_INHIBITION: constants.LETTER_WORD_INHIBITION,
+            WORD_LETTER_EXCITATION: constants.WORD_LETTER_EXCITATION,
+            WORD_LETTER_INHIBITION: constants.WORD_LETTER_INHIBITION,
+            WORD_WORD_INHIBITION: constants.WORD_WORD_INHIBITION,
+            LETTER_LETTER_INHIBITION: constants.LETTER_LETTER_INHIBITION,
+            DECAY_RATE: constants.DECAY_RATE,
+            MIN_ACTIVATION: constants.MIN_ACTIVATION
+        });
+        onMaskStartChange(constants.DEFAULT_MASK_START);
+        onMaxStepsChange(constants.DEFAULT_MAX_STEPS);
+    };
+
     return (
         <div className="parameters-panel">
             <div className="parameters-header">
                 <h3>Model Parameters</h3>
+                <button className="reset-defaults-btn" onClick={handleResetDefaults} title="Reset all parameters to defaults">
+                    Reset Defaults
+                </button>
             </div>
 
             <div className="parameters-grid">

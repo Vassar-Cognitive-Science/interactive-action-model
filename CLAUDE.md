@@ -85,7 +85,8 @@ The model is split between **core logic** (`src/core/`) and **UI components** (`
 1. **Control Panel** (`SimulationRunner.jsx`)
    - Play/Pause/Step/Reset controls
    - Speed slider
-   - Optional Parameters panel (hidden by default, toggled with ⚙ button)
+   - Parameters drawer (left side, toggled with ⚙ button)
+   - Chart Settings drawer (left side, toggled with 📊 button)
 
 2. **Layer Visualization** (`LayerVisualization.jsx`)
    - Top: Word Layer - horizontal grid of top 15 words with color-coded activation
@@ -128,16 +129,26 @@ The model is split between **core logic** (`src/core/`) and **UI components** (`
 - `maskStart`: Timestep when mask appears (replaces stimulus with AMBIGUOUS)
 - Parameters can be edited live via Parameters panel
 
-### Data Files
+### Configuration & Data Files
+
+**`model-config.json`** (project root)
+- **Centralized configuration file** for all model defaults
+- Easy to edit without touching code
+- Contains:
+  - `parameters`: All weight/activation parameters
+  - `simulation`: Max steps, mask start, default speed
+  - `mask`: Default mask stimulus features
+- Loaded by `src/core/constants.js` at build time
+
+**`src/core/constants.js`**
+- Imports values from `model-config.json`
+- Exports constants used throughout the app
+- Provides: `DEFAULT_MAX_STEPS`, `DEFAULT_MASK_START`, `DEFAULT_SPEED`
 
 **`src/core/data.js`**
 - `letters`: Object mapping a-z to 14-element binary feature vectors
 - `WORD_LIST`: 1179 four-letter words
 - Feature order matches IAM diagram: top/middle/bottom horizontal, verticals, diagonals
-
-**`src/core/constants.js`**
-- All model parameters (excitation/inhibition weights, decay, bounds)
-- `MASK`: Default mask pattern (combination of O and X features)
 
 ## Important Implementation Details
 
@@ -197,10 +208,17 @@ SimulationRunner (state management)
 
 ## Common Modifications
 
-**Adjusting model behavior**: Edit `src/core/constants.js`
+**Adjusting model defaults**: Edit `model-config.json` in project root (easiest method - no code changes needed)
 
 **Changing word list**: Modify `WORD_LIST` in `src/core/data.js`
 
 **Adding letter features**: Update `letters` object in `src/core/data.js` and increase feature count from 14
 
 **Modifying UI layout**: Most layout is in component CSS files, with grid/flexbox for responsiveness
+
+**Customizing visualization**: Use the Chart Settings drawer (📊 button) to configure:
+- Top 5 words display
+- Tracked words (always shown)
+- Letter unit tracking (select position + letters)
+- Auto-scale Y-axis
+- Legend visibility

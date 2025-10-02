@@ -1,0 +1,26 @@
+{
+  "description": "Configuration file for Interactive Activation Model default parameters",
+  "parameters": {
+    "featureLetterExcitation": 0.005,
+    "featureLetterInhibition": 0.15,
+    "letterWordExcitation": 0.07,
+    "letterWordInhibition": 0.04,
+    "wordLetterExcitation": 0.3,
+    "wordLetterInhibition": 0.0,
+    "wordWordInhibition": 0.21,
+    "letterLetterInhibition": 0.0,
+    "minActivation": -0.2,
+    "decayRate": 0.07,
+    "restGain": 0.05
+  },
+  "simulation": {
+    "maxSteps": 40,
+    "maskStart": 20,
+    "defaultSpeed": 100
+  },
+  "mask": {
+    "description": "Default mask stimulus (combination of O and X features)",
+    "features": [1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1]
+  }
+  
+}

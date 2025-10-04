@@ -3,26 +3,59 @@ import { activationToColor, getContrastColor } from '../utils/colors.js';
 import './WordLayer.css';
 
 /**
- * Displays the top N most active words
+ * Displays the top N most active words plus any tracked words
  */
-export default function WordLayer({ words, topN = 15, showValues = true, trackedWords = [], onTrackedWordsChange }) {
+export default function WordLayer({ words, topN = 15, showValues = true, trackedWords = [], onTrackedWordsChange, showChart = false, onToggleChart }) {
+    // Get all words with their data
+    const allWords = words.map((wordObj, index) => ({
+        word: wordObj.word,
+        activation: wordObj.activation,
+        index
+    }));
+
     // Get top N words sorted by activation
-    const topWords = words
-        .map((wordObj, index) => ({ word: wordObj.word, activation: wordObj.activation, index }))
+    const topWords = [...allWords]
         .sort((a, b) => b.activation - a.activation)
         .slice(0, topN);
 
+    // Add tracked words that aren't already in top N
+    const trackedWordData = trackedWords
+        .map(word => allWords.find(w => w.word === word))
+        .filter(w => w && !topWords.find(tw => tw.word === w.word));
+
+    // Combine and sort: tracked words first, then top words by activation
+    const displayWords = [...trackedWordData, ...topWords]
+        .sort((a, b) => {
+            const aTracked = trackedWords.includes(a.word);
+            const bTracked = trackedWords.includes(b.word);
+            if (aTracked && !bTracked) return -1;
+            if (!aTracked && bTracked) return 1;
+            return b.activation - a.activation;
+        });
+
     // Find max activation for scaling
-    const maxActivation = Math.max(...topWords.map(w => w.activation), 0.1);
+    const maxActivation = Math.max(...displayWords.map(w => w.activation), 0.1);
 
     const [showTrackingUI, setShowTrackingUI] = useState(false);
     const [trackInput, setTrackInput] = useState('');
+    const [error, setError] = useState('');
 
     const handleAddTrackedWord = () => {
         const word = trackInput.trim().toLowerCase();
-        if (word && !trackedWords.includes(word) && onTrackedWordsChange) {
+        if (!word) return;
+
+        // Check if word exists in vocabulary
+        const wordExists = allWords.some(w => w.word === word);
+        if (!wordExists) {
+            setError(`"${word.toUpperCase()}" not in vocabulary`);
+            setTimeout(() => setError(''), 3000);
+            return;
+        }
+
+        if (!trackedWords.includes(word) && onTrackedWordsChange) {
             onTrackedWordsChange([...trackedWords, word]);
             setTrackInput('');
+            setError('');
         }
     };
 
@@ -45,47 +78,58 @@ export default function WordLayer({ words, topN = 15, showValues = true, tracked
     return (
         <div className="word-layer">
             <div className="layer-header">
-                <span>Word Layer</span>
-                {onTrackedWordsChange && (
-                    <button
-                        className="track-toggle-btn"
-                        onClick={() => setShowTrackingUI(!showTrackingUI)}
-                        title="Track specific words"
-                    >
-                        📊 Track
-                    </button>
-                )}
+                <div className="layer-header-buttons">
+                    {onToggleChart && (
+                        <button
+                            className={`chart-toggle-btn ${showChart ? 'active' : ''}`}
+                            onClick={onToggleChart}
+                            title="Toggle chart visibility"
+                        >
+                            📈
+                        </button>
+                    )}
+                </div>
             </div>
 
-            {showTrackingUI && onTrackedWordsChange && (
-                <div className="tracking-controls">
-                    <div className="track-input-group">
+            {onTrackedWordsChange && (
+                <div className="tracked-words-section">
+                    {trackedWords.map(word => (
+                        <span key={word} className="tracked-word-tag">
+                            {word.toUpperCase()}
+                            <button onClick={() => handleRemoveTrackedWord(word)}>×</button>
+                        </span>
+                    ))}
+                    <button
+                        className="add-track-btn"
+                        onClick={() => setShowTrackingUI(!showTrackingUI)}
+                        title="Add word to track"
+                    >
+                        {showTrackingUI ? '×' : '+'}
+                    </button>
+                    {showTrackingUI && (
                         <input
                             type="text"
+                            className="track-input-inline"
                             value={trackInput}
                             onChange={(e) => setTrackInput(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleAddTrackedWord()}
-                            placeholder="Enter word to track..."
+                            onBlur={() => {
+                                if (trackInput.trim()) {
+                                    handleAddTrackedWord();
+                                }
+                                setShowTrackingUI(false);
+                            }}
+                            placeholder="word..."
                             maxLength={4}
+                            autoFocus
                         />
-                        <button onClick={handleAddTrackedWord}>Add</button>
-                    </div>
-                    {trackedWords.length > 0 && (
-                        <div className="tracked-words-list">
-                            <span>Tracked:</span>
-                            {trackedWords.map(word => (
-                                <span key={word} className="tracked-word-tag">
-                                    {word.toUpperCase()}
-                                    <button onClick={() => handleRemoveTrackedWord(word)}>×</button>
-                                </span>
-                            ))}
-                        </div>
                     )}
+                    {error && <span className="track-error">{error}</span>}
                 </div>
             )}
 
             <div className="word-grid">
-                {topWords.map(({ word, activation, index }) => {
+                {displayWords.map(({ word, activation, index }) => {
                     const bgColor = activationToColor(activation);
                     const textColor = getContrastColor(activation);
                     const isTracked = trackedWords.includes(word);

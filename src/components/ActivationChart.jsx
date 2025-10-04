@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -10,6 +10,7 @@ import {
     Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import SimpleChartSettings from './SimpleChartSettings.jsx';
 
 ChartJS.register(
     CategoryScale,
@@ -21,7 +22,8 @@ ChartJS.register(
     Legend
 );
 
-export default function ActivationChart({ experimentData }) {
+export default function ActivationChart({ experimentData, settings, onSettingsChange, settingsType = 'word' }) {
+    const [showSettings, setShowSettings] = useState(false);
     if (!experimentData) {
         return <div>No data to display</div>;
     }
@@ -39,9 +41,16 @@ export default function ActivationChart({ experimentData }) {
     ];
 
     const letterColors = [
-        'rgb(127, 127, 127)',
-        'rgb(189, 189, 189)',
-        'rgb(89, 89, 89)'
+        'rgb(46, 204, 113)',  // Green
+        'rgb(155, 89, 182)',  // Purple
+        'rgb(230, 126, 34)',  // Orange
+        'rgb(52, 152, 219)',  // Blue
+        'rgb(231, 76, 60)',   // Red
+        'rgb(26, 188, 156)',  // Teal
+        'rgb(241, 196, 15)',  // Yellow
+        'rgb(189, 195, 199)', // Gray
+        'rgb(142, 68, 173)',  // Dark Purple
+        'rgb(44, 62, 80)'     // Dark Blue
     ];
 
     // Generate x-axis labels from 0 to maxSteps
@@ -137,24 +146,39 @@ export default function ActivationChart({ experimentData }) {
     };
 
     return (
-        <div style={{ height: '450px', marginBottom: '2rem' }}>
-            <Line data={chartData} options={options} />
-            <div style={{
-                marginTop: '1rem',
-                padding: '0.5rem',
-                fontSize: '0.85rem',
-                color: '#6c757d',
-                textAlign: 'center'
-            }}>
-                <span style={{ marginRight: '1rem' }}>
-                    <strong>Solid lines:</strong> Words
-                </span>
-                <span style={{ marginRight: '1rem' }}>
-                    <strong>Dashed lines:</strong> Letters
-                </span>
-                <span>
-                    <strong>Thicker lines:</strong> Tracked words
-                </span>
+        <div style={{ position: 'relative' }}>
+            {settings && onSettingsChange && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+                    <button
+                        onClick={() => setShowSettings(!showSettings)}
+                        style={{
+                            padding: '0.35rem 0.75rem',
+                            backgroundColor: showSettings ? '#2980b9' : '#3498db',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            fontWeight: 600
+                        }}
+                    >
+                        {showSettings ? '✕ Close' : '⚙ Settings'}
+                    </button>
+                </div>
+            )}
+
+            {showSettings && settings && onSettingsChange && (
+                <div style={{ marginBottom: '1rem' }}>
+                    <SimpleChartSettings
+                        settings={settings}
+                        onSettingsChange={onSettingsChange}
+                        type={settingsType}
+                    />
+                </div>
+            )}
+
+            <div style={{ height: '250px', marginBottom: '0.5rem' }}>
+                <Line data={chartData} options={options} />
             </div>
         </div>
     );

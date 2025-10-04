@@ -58,6 +58,15 @@ export default function FeatureEditor({ onFeaturesChange }) {
     const loadWord = (word) => {
         const normalized = word.toLowerCase().slice(0, 4).padEnd(4, ' ');
         const newPositions = Array.from(normalized).map(char => {
+            if (char === '#') {
+                // # means mask - combine O and X features (visual noise)
+                const oFeatures = letters['o'] || Array(14).fill(0);
+                const xFeatures = letters['x'] || Array(14).fill(0);
+                // A feature is present if it's in either O or X
+                return oFeatures.map((o, i) =>
+                    (o || xFeatures[i]) ? FEATURE_STATE.PRESENT : FEATURE_STATE.ABSENT
+                );
+            }
             if (char === ' ' || !letters[char]) {
                 return Array(14).fill(FEATURE_STATE.ABSENT);
             }

@@ -1,3 +1,7 @@
+.letter-pool-container {
+    width: 100%;
+}
+
 .letter-pool {
     margin: 0.5rem;
 }
@@ -7,14 +11,64 @@
     font-size: 0.85rem;
     color: #2c3e50;
     margin-bottom: 0.5rem;
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 0.5rem;
+}
+
+.pool-header-buttons {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.pool-header .chart-toggle-btn,
+.pool-header .chart-settings-btn {
+    padding: 0.25rem 0.5rem;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.pool-header .chart-toggle-btn {
+    background-color: #95a5a6;
+}
+
+.pool-header .chart-toggle-btn:hover {
+    background-color: #7f8c8d;
+}
+
+.pool-header .chart-toggle-btn.active {
+    background-color: #3498db;
+}
+
+.pool-header .chart-toggle-btn.active:hover {
+    background-color: #2980b9;
+}
+
+.pool-header .chart-settings-btn {
+    background-color: #3498db;
+}
+
+.pool-header .chart-settings-btn:hover {
+    background-color: #2980b9;
+}
+
+.letter-chart-container {
+    margin-top: 1rem;
+    padding: 0.5rem;
+    background-color: white;
+    border-radius: 4px;
 }
 
 .letter-grid {
     display: grid;
     grid-template-columns: repeat(13, 1fr);
     gap: 2px;
-    background-color: #e0e0e0;
+    background-color: #d0d0d0;
     padding: 2px;
     border-radius: 4px;
 }

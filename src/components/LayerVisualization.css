@@ -2,7 +2,48 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.5rem;
+}
+
+.layer-section-with-label {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+.layer-label {
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+    padding: 1rem 0.35rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: white;
+    text-align: center;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(180deg);
+}
+
+.layer-label.word-label {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+}
+
+.layer-label.letter-label {
+    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+}
+
+.layer-label.feature-label {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.layer-section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .visualization-header {
@@ -25,37 +66,51 @@
     font-size: 0.95rem;
 }
 
-.layer-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-}
-
 .layer-arrow {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: #7f8c8d;
-    padding: 0.5rem;
+    padding: 0.25rem;
     text-align: center;
+    width: 100%;
 }
 
 .letter-layer-container {
     width: 100%;
-    padding: 1rem;
+    padding: 0.75rem;
     background-color: white;
-    border-radius: 8px;
+    border-radius: 6px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .layer-title {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
     color: #2c3e50;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     text-align: center;
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.35rem;
     border-bottom: 2px solid #2ecc71;
+}
+
+.word-layer-with-chart {
+    width: 100%;
+    display: block;
+}
+
+.word-layer-with-chart:has(.word-chart-container) {
+    display: grid;
+    grid-template-columns: 450px 1fr;
+    gap: 1rem;
+    align-items: start;
+}
+
+.word-chart-container {
+    min-width: 0;
+    background-color: white;
+    border-radius: 6px;
+    padding: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .letter-pools {
@@ -73,6 +128,27 @@
     background-color: white;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.chart-placeholder {
+    padding: 3rem 2rem;
+    text-align: center;
+    color: #7f8c8d;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 2px dashed #dee2e6;
+}
+
+.chart-placeholder p {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.chart-placeholder small {
+    font-size: 0.9rem;
+    color: #6c757d;
 }
 
 .activation-legend {
@@ -116,6 +192,12 @@
     border: 1px solid #e0e0e0;
 }
 
+@media (max-width: 1200px) {
+    .word-layer-with-chart:has(.word-chart-container) {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 1024px) {
     .letter-pools {
         grid-template-columns: repeat(2, 1fr);
@@ -123,6 +205,15 @@
 }
 
 @media (max-width: 768px) {
+    .layer-section-with-label {
+        grid-template-columns: 50px 1fr;
+    }
+
+    .layer-label {
+        font-size: 0.75rem;
+        padding: 0.75rem 0.25rem;
+    }
+
     .letter-pools {
         grid-template-columns: 1fr;
     }

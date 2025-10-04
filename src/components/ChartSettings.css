@@ -27,10 +27,33 @@
     font-size: 0.9rem;
 }
 
+.setting-group label:not(:has(input)) {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
 .setting-group input[type="checkbox"] {
     cursor: pointer;
     width: 16px;
     height: 16px;
+}
+
+.setting-group select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    background-color: white;
+}
+
+.setting-group select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
 }
 
 .setting-subgroup {

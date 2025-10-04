@@ -14,39 +14,45 @@ export default function ChartSettings({ settings, onSettingsChange }) {
             <h3>Chart Settings</h3>
 
             <div className="setting-group">
-                <label>
-                    <input
-                        type="checkbox"
-                        checked={settings.showTopWords}
-                        onChange={(e) => updateSetting('showTopWords', e.target.checked)}
-                    />
-                    Show Top 5 Words
-                </label>
+                <label htmlFor="pool-type">Visualization Pool:</label>
+                <select
+                    id="pool-type"
+                    value={settings.poolType || 'words'}
+                    onChange={(e) => updateSetting('poolType', e.target.value)}
+                    className="pool-select"
+                >
+                    <option value="words">Word Layer</option>
+                    <option value="letters">Letter Layer</option>
+                </select>
             </div>
 
-            <div className="setting-group">
-                <label>
-                    <input
-                        type="checkbox"
-                        checked={settings.showTrackedWords}
-                        onChange={(e) => updateSetting('showTrackedWords', e.target.checked)}
-                    />
-                    Show Tracked Words
-                </label>
-            </div>
+            {settings.poolType === 'words' && (
+                <>
+                    <div className="setting-group">
+                        <label>
+                            <input
+                                type="checkbox"
+                                checked={settings.showTopWords}
+                                onChange={(e) => updateSetting('showTopWords', e.target.checked)}
+                            />
+                            Show Top 5 Words
+                        </label>
+                    </div>
 
-            <div className="setting-group">
-                <label>
-                    <input
-                        type="checkbox"
-                        checked={settings.showLetters}
-                        onChange={(e) => updateSetting('showLetters', e.target.checked)}
-                    />
-                    Show Letter Units
-                </label>
-            </div>
+                    <div className="setting-group">
+                        <label>
+                            <input
+                                type="checkbox"
+                                checked={settings.showTrackedWords}
+                                onChange={(e) => updateSetting('showTrackedWords', e.target.checked)}
+                            />
+                            Show Tracked Words
+                        </label>
+                    </div>
+                </>
+            )}
 
-            {settings.showLetters && (
+            {settings.poolType === 'letters' && (
                 <div className="setting-subgroup">
                     <label htmlFor="letter-position">Position:</label>
                     <select

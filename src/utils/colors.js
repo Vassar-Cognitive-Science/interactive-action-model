@@ -16,9 +16,9 @@ export function activationToColor(activation, min = -0.2, max = 1.0) {
     if (normalized < 0.5) {
         // Low activation: white to light blue
         const intensity = normalized * 2; // 0 to 1
-        const r = 255;
+        const r = Math.floor(255 - intensity * 80);
         const g = Math.floor(255 - intensity * 50);
-        const b = Math.floor(255 - intensity * 80);
+        const b = 255;
         return `rgb(${r}, ${g}, ${b})`;
     } else {
         // High activation: light blue to dark blue

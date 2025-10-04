@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { InteractiveActivationModel } from '../core/IAModel.js';
 import LayerVisualization from './LayerVisualization.jsx';
 import ActivationChart from './ActivationChart.jsx';
-import ChartSettings from './ChartSettings.jsx';
+import SimpleChartSettings from './SimpleChartSettings.jsx';
 import Parameters from './Parameters.jsx';
 import * as constants from '../core/constants.js';
 import './SimulationRunner.css';
@@ -21,19 +21,23 @@ export default function SimulationRunner() {
     const [speed, setSpeed] = useState(constants.DEFAULT_SPEED); // ms per step
     const [modelState, setModelState] = useState(null);
     const [currentStimulus, setCurrentStimulus] = useState(null);
-    const [history, setHistory] = useState({ time: [], words: {}, letters: {} });
+    const [history, setHistory] = useState({ time: [], words: {}, letters: {}, wordPeaks: {}, letterPeaks: {} });
     const [showParameters, setShowParameters] = useState(false);
-    const [showChartSettings, setShowChartSettings] = useState(false);
+    const [showAbout, setShowAbout] = useState(false);
     const [trackedWords, setTrackedWords] = useState([]);
-    const [chartSettings, setChartSettings] = useState({
+    const [showWordChart, setShowWordChart] = useState(false);
+    const [showLetterCharts, setShowLetterCharts] = useState([false, false, false, false]);
+    const [wordChartSettings, setWordChartSettings] = useState({
         showTopWords: true,
         showTrackedWords: true,
-        showLetters: false,
-        letterPosition: 0,
-        letterFilter: '',
-        autoScale: false,
-        showLegend: true
+        autoScale: true
     });
+    const [letterChartSettings, setLetterChartSettings] = useState([
+        { showTopLetters: true, topN: 3, letterFilter: '', autoScale: true },
+        { showTopLetters: true, topN: 3, letterFilter: '', autoScale: true },
+        { showTopLetters: true, topN: 3, letterFilter: '', autoScale: true },
+        { showTopLetters: true, topN: 3, letterFilter: '', autoScale: true }
+    ]);
     const [parameters, setParameters] = useState({
         FEATURE_LETTER_EXCITATION: constants.FEATURE_LETTER_EXCITATION,
         FEATURE_LETTER_INHIBITION: constants.FEATURE_LETTER_INHIBITION,
@@ -57,7 +61,7 @@ export default function SimulationRunner() {
         setCurrentStep(0);
         setIsRunning(false);
         setIsPaused(false);
-        setHistory({ time: [], words: {}, letters: {} });
+        setHistory({ time: [], words: {}, letters: {}, wordPeaks: {}, letterPeaks: {} });
         updateVisualization();
     };
 
@@ -78,71 +82,46 @@ export default function SimulationRunner() {
         model.stepModel(input, true);
         updateVisualization();
 
-        // Track words and letters for chart
-        const topWords = model.getTopWords(5);
         const state = model.getState();
 
         setHistory(prev => {
             const newHistory = {
                 time: [...prev.time, currentStep],
                 words: { ...prev.words },
-                letters: { ...prev.letters }
+                letters: { ...prev.letters },
+                wordPeaks: { ...prev.wordPeaks },
+                letterPeaks: { ...prev.letterPeaks }
             };
 
-            // Track top 5 words
-            const recordedWords = new Set();
-            topWords.forEach(({ word, activation }) => {
+            // Track ALL words for peak detection
+            model.wordList.forEach((word, idx) => {
+                const activation = state.words[idx];
                 if (!newHistory.words[word]) {
                     newHistory.words[word] = Array(prev.time.length).fill(null);
                 }
-                // Don't mutate - create new array (important for React StrictMode)
                 newHistory.words[word] = [...newHistory.words[word], activation];
-                recordedWords.add(word);
+
+                // Update peak activation
+                const currentPeak = newHistory.wordPeaks[word] || 0;
+                newHistory.wordPeaks[word] = Math.max(currentPeak, activation);
             });
 
-            // Track all tracked words (even if not in top 5)
-            trackedWords.forEach(word => {
-                // Skip if already recorded in top 5
-                if (recordedWords.has(word)) return;
-
-                const wordIndex = model.wordList.indexOf(word);
-                const activation = wordIndex >= 0 ? state.words[wordIndex] : 0;
-                if (!newHistory.words[word]) {
-                    newHistory.words[word] = Array(prev.time.length).fill(null);
-                }
-                // Don't mutate - create new array (important for React StrictMode)
-                newHistory.words[word] = [...newHistory.words[word], activation];
-            });
-
-            // Track letter activations for specified position and letters
-            if (chartSettings.showLetters && chartSettings.letterFilter) {
-                const position = chartSettings.letterPosition;
-                const letters = chartSettings.letterFilter.split('').filter(c => /[a-z]/.test(c));
-
-                letters.forEach(letter => {
-                    const letterIndex = letter.charCodeAt(0) - 97; // a=0, b=1, etc.
-                    if (letterIndex >= 0 && letterIndex < 26) {
+            // Track ALL letters for positions with visible charts
+            showLetterCharts.forEach((isVisible, position) => {
+                if (isVisible) {
+                    const allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+                    allLetters.forEach((letter, idx) => {
                         const key = `${letter.toUpperCase()}_pos${position + 1}`;
-                        const activation = state.letters[position][letterIndex];
+                        const activation = state.letters[position][idx];
                         if (!newHistory.letters[key]) {
                             newHistory.letters[key] = Array(prev.time.length).fill(null);
                         }
-                        // Don't mutate - create new array (important for React StrictMode)
                         newHistory.letters[key] = [...newHistory.letters[key], activation];
-                    }
-                });
-            }
 
-            // Fill gaps in history for words that aren't currently tracked
-            Object.keys(newHistory.words).forEach(word => {
-                while (newHistory.words[word].length < newHistory.time.length) {
-                    newHistory.words[word] = [...newHistory.words[word], null];
-                }
-            });
-
-            Object.keys(newHistory.letters).forEach(key => {
-                while (newHistory.letters[key].length < newHistory.time.length) {
-                    newHistory.letters[key] = [...newHistory.letters[key], null];
+                        // Update peak activation
+                        const currentPeak = newHistory.letterPeaks[key] || 0;
+                        newHistory.letterPeaks[key] = Math.max(currentPeak, activation);
+                    });
                 }
             });
 
@@ -204,49 +183,109 @@ export default function SimulationRunner() {
         updateVisualization();
     }, []);
 
-    // Prepare chart data based on settings
-    const chartData = history.time.length > 0 ? (() => {
+    // Helper to prepare word chart data
+    const prepareWordChartData = () => {
+        if (history.time.length === 0) return null;
+
         const datasets = [];
 
+        // Get top 5 words by peak activation
+        const wordsByPeak = Object.entries(history.wordPeaks)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([word]) => word);
+
         // Add words based on settings
-        if (chartSettings.showTopWords || chartSettings.showTrackedWords) {
-            Object.entries(history.words).forEach(([word, values]) => {
-                const isTracked = trackedWords.includes(word);
-                const shouldShow =
-                    (chartSettings.showTrackedWords && isTracked) ||
-                    (chartSettings.showTopWords && !isTracked);
+        Object.entries(history.words).forEach(([word, values]) => {
+            const isTracked = trackedWords.includes(word);
+            const isTopPeak = wordsByPeak.includes(word);
+            const shouldShow =
+                (wordChartSettings.showTrackedWords && isTracked) ||
+                (wordChartSettings.showTopWords && isTopPeak && !isTracked);
 
-                if (shouldShow) {
-                    datasets.push({
-                        label: word.toUpperCase(),
-                        values,
-                        type: 'word',
-                        isTracked
-                    });
-                }
-            });
-        }
-
-        // Add letter data if enabled
-        if (chartSettings.showLetters) {
-            Object.entries(history.letters).forEach(([key, values]) => {
+            if (shouldShow) {
                 datasets.push({
-                    label: key,
+                    label: word.toUpperCase(),
                     values,
-                    type: 'letter'
+                    type: 'word',
+                    isTracked
                 });
-            });
-        }
+            }
+        });
 
         return {
-            title: 'Activation Over Time',
+            title: 'Word Activations',
             timePoints: history.time,
             maxSteps: maxSteps,
             data: datasets,
-            autoScale: chartSettings.autoScale,
-            showLegend: chartSettings.showLegend
+            autoScale: wordChartSettings.autoScale,
+            showLegend: true
         };
-    })() : null;
+    };
+
+    // Helper to prepare letter pool chart data
+    const prepareLetterChartData = (position) => {
+        if (history.time.length === 0) return null;
+
+        const datasets = [];
+        const settings = letterChartSettings[position];
+        const filterLetters = settings.letterFilter.split('').filter(c => /[a-z]/.test(c));
+
+        // Determine which letters to show
+        let lettersToShow;
+        if (filterLetters.length > 0) {
+            lettersToShow = filterLetters;
+        } else if (settings.showTopLetters) {
+            // Get top N letters by peak activation for this position
+            const lettersByPeak = Object.entries(history.letterPeaks)
+                .filter(([key]) => key.endsWith(`_pos${position + 1}`))
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, settings.topN)
+                .map(([key]) => key.charAt(0).toLowerCase());
+            lettersToShow = lettersByPeak;
+        } else {
+            // Show all tracked letters
+            lettersToShow = Object.keys(history.letters)
+                .filter(key => key.endsWith(`_pos${position + 1}`))
+                .map(key => key.charAt(0).toLowerCase());
+        }
+
+        lettersToShow.forEach(letter => {
+            const key = `${letter.toUpperCase()}_pos${position + 1}`;
+            if (history.letters[key]) {
+                datasets.push({
+                    label: letter.toUpperCase(),
+                    values: history.letters[key],
+                    type: 'letter'
+                });
+            }
+        });
+
+        return {
+            title: `Position ${position + 1} Letter Activations`,
+            timePoints: history.time,
+            maxSteps: maxSteps,
+            data: datasets,
+            autoScale: settings.autoScale,
+            showLegend: datasets.length <= 10
+        };
+    };
+
+    const toggleLetterChart = (position) => {
+        setShowLetterCharts(prev => {
+            const newCharts = [...prev];
+            newCharts[position] = !newCharts[position];
+            return newCharts;
+        });
+    };
+
+    const updateLetterChartSettings = (position, newSettings) => {
+        setLetterChartSettings(prev => {
+            const updated = [...prev];
+            updated[position] = newSettings;
+            return updated;
+        });
+    };
 
     return (
         <>
@@ -273,24 +312,51 @@ export default function SimulationRunner() {
                 </>
             )}
 
-            {/* Chart Settings Drawer */}
-            {showChartSettings && (
+            {/* About Drawer */}
+            {showAbout && (
                 <>
-                    <div className="drawer-overlay" onClick={() => setShowChartSettings(false)} />
+                    <div className="drawer-overlay" onClick={() => setShowAbout(false)} />
                     <div className="drawer drawer-left">
                         <div className="drawer-header">
-                            <h3>Chart Settings</h3>
-                            <button className="drawer-close" onClick={() => setShowChartSettings(false)}>×</button>
+                            <h3>About</h3>
+                            <button className="drawer-close" onClick={() => setShowAbout(false)}>×</button>
                         </div>
                         <div className="drawer-content">
-                            <ChartSettings
-                                settings={chartSettings}
-                                onSettingsChange={setChartSettings}
-                            />
+                            <div style={{ lineHeight: '1.6' }}>
+                                <h4 style={{ marginTop: 0 }}>Interactive Activation Model</h4>
+                                <p>
+                                    This is an interactive visualization of the Interactive Activation Model
+                                    of word recognition, originally developed by McClelland and Rumelhart (1981).
+                                </p>
+
+                                <h4>Original Paper</h4>
+                                <p>
+                                    McClelland, J. L., & Rumelhart, D. E. (1981). An interactive activation model
+                                    of context effects in letter perception: I. An account of basic findings.
+                                    <em> Psychological Review, 88</em>(5), 375-407.
+                                </p>
+
+                                <h4>Credits</h4>
+                                <p>
+                                    <strong>Development:</strong> Josh de Leeuw, Vassar College
+                                </p>
+                                <p>
+                                    <strong>Coding Assistant:</strong> Claude (Anthropic)
+                                </p>
+
+                                <h4>About the Model</h4>
+                                <p>
+                                    The Interactive Activation Model demonstrates how word recognition emerges
+                                    from bidirectional interactions between visual features, letters, and words.
+                                    The model exhibits phenomena like the word superiority effect through
+                                    these interactive processes.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </>
             )}
+
 
             <div className="simulation-runner">
                 <div className="simulation-controls">
@@ -322,12 +388,6 @@ export default function SimulationRunner() {
                         >
                             ⚙ Parameters
                         </button>
-                        <button
-                            onClick={() => setShowChartSettings(!showChartSettings)}
-                            className={showChartSettings ? "btn-toggle active" : "btn-toggle"}
-                        >
-                            📊 Chart
-                        </button>
                     </div>
 
                     <div className="speed-control">
@@ -348,6 +408,14 @@ export default function SimulationRunner() {
                         Step: {currentStep} / {maxSteps}
                         {currentStep >= maskStart && <span className="mask-indicator"> (Masked)</span>}
                     </div>
+
+                    <button
+                        onClick={() => setShowAbout(!showAbout)}
+                        className="about-icon-btn"
+                        title="About this model"
+                    >
+                        ℹ
+                    </button>
                 </div>
 
                 <div className="simulation-content">
@@ -359,21 +427,19 @@ export default function SimulationRunner() {
                             onFeaturesChange={setCustomFeatures}
                             trackedWords={trackedWords}
                             onTrackedWordsChange={setTrackedWords}
+                            showWordChart={showWordChart}
+                            onToggleWordChart={() => setShowWordChart(!showWordChart)}
+                            wordChartData={prepareWordChartData()}
+                            wordChartSettings={wordChartSettings}
+                            onWordChartSettingsChange={setWordChartSettings}
+                            showLetterCharts={showLetterCharts}
+                            onToggleLetterChart={toggleLetterChart}
+                            prepareLetterChartData={prepareLetterChartData}
+                            letterChartSettings={letterChartSettings}
+                            onLetterChartSettingsChange={updateLetterChartSettings}
                         />
                     </div>
                 </div>
-
-                {(chartData || isRunning || isPaused || currentStep > 0) && (
-                    <div className="chart-panel">
-                        {chartData ? (
-                            <ActivationChart experimentData={chartData} />
-                        ) : (
-                            <div className="chart-placeholder">
-                                <p>Chart will appear here once simulation starts...</p>
-                            </div>
-                        )}
-                    </div>
-                )}
             </div>
         </>
     );

@@ -14,13 +14,13 @@ export default function LetterInput({ value = '', onChange, disabled = false }) 
     const handleChange = (index, newValue) => {
         if (disabled) return;
 
-        // Only allow letters
-        const letter = newValue.toLowerCase().replace(/[^a-z]/g, '');
+        // Allow letters and # for mask
+        const char = newValue.toLowerCase().replace(/[^a-z#]/g, '');
 
-        if (letter) {
+        if (char) {
             // Update the value - always use the last character typed (replace mode)
             const newLetters = [...letters];
-            newLetters[index] = letter[letter.length - 1];
+            newLetters[index] = char[char.length - 1];
 
             // Convert to string, trimming only trailing spaces but preserving structure
             let result = newLetters.join('');
@@ -51,11 +51,11 @@ export default function LetterInput({ value = '', onChange, disabled = false }) 
     const handleKeyDown = (index, e) => {
         if (disabled) return;
 
-        // If it's a letter key and the box already has content, prevent default and handle replacement
-        if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+        // If it's a letter key or # and the box already has content, prevent default and handle replacement
+        if (e.key.length === 1 && /[a-zA-Z#]/.test(e.key)) {
             e.preventDefault(); // Prevent the default input behavior
 
-            // Directly set the new letter
+            // Directly set the new letter or #
             const newLetters = [...letters];
             newLetters[index] = e.key.toLowerCase();
 
@@ -143,7 +143,7 @@ export default function LetterInput({ value = '', onChange, disabled = false }) 
         e.preventDefault();
 
         const pastedText = e.clipboardData.getData('text');
-        const cleanText = pastedText.toLowerCase().replace(/[^a-z]/g, '').slice(0, 4);
+        const cleanText = pastedText.toLowerCase().replace(/[^a-z#]/g, '').slice(0, 4);
 
         onChange(cleanText);
 

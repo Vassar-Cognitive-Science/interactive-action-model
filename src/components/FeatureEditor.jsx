@@ -119,13 +119,18 @@ export default function FeatureEditor({ onFeaturesChange }) {
 
     return (
         <div className="feature-editor">
-            <div className="editor-header">
-                <div className="input-section">
-                    <label>Input:</label>
-                    <LetterInput
-                        value={inputWord}
-                        onChange={handleWordChange}
-                    />
+            <div className="feature-legend">
+                <div className="legend-item">
+                    <div className="legend-color" style={{ backgroundColor: '#27ae60' }}></div>
+                    <span>FEATURE PRESENT</span>
+                </div>
+                <div className="legend-item">
+                    <div className="legend-color" style={{ backgroundColor: '#95a5a6' }}></div>
+                    <span>FEATURE ABSENT</span>
+                </div>
+                <div className="legend-item">
+                    <div className="legend-color" style={{ backgroundColor: '#2c3e50' }}></div>
+                    <span>AMBIGUOUS</span>
                 </div>
             </div>
 
@@ -154,19 +159,11 @@ export default function FeatureEditor({ onFeaturesChange }) {
                 ))}
             </div>
 
-            <div className="feature-legend">
-                <div className="legend-item">
-                    <div className="legend-color" style={{ backgroundColor: '#27ae60' }}></div>
-                    <span>PRESENT</span>
-                </div>
-                <div className="legend-item">
-                    <div className="legend-color" style={{ backgroundColor: '#95a5a6' }}></div>
-                    <span>ABSENT</span>
-                </div>
-                <div className="legend-item">
-                    <div className="legend-color" style={{ backgroundColor: '#2c3e50' }}></div>
-                    <span>AMBIGUOUS</span>
-                </div>
+            <div className="input-section">
+                <LetterInput
+                    value={inputWord}
+                    onChange={handleWordChange}
+                />
             </div>
         </div>
     );

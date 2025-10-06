@@ -107,7 +107,7 @@ export default function SimulationRunner() {
                 newHistory.words[word] = [...newHistory.words[word], activation];
 
                 // Update peak activation
-                const currentPeak = newHistory.wordPeaks[word] || 0;
+                const currentPeak = newHistory.wordPeaks[word] ?? -Infinity;
                 newHistory.wordPeaks[word] = Math.max(currentPeak, activation);
             });
 
@@ -123,7 +123,7 @@ export default function SimulationRunner() {
                     newHistory.letters[key] = [...newHistory.letters[key], activation];
 
                     // Update peak activation
-                    const currentPeak = newHistory.letterPeaks[key] || 0;
+                    const currentPeak = newHistory.letterPeaks[key] ?? -Infinity;
                     newHistory.letterPeaks[key] = Math.max(currentPeak, activation);
                 });
             }

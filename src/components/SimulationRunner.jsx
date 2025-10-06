@@ -4,6 +4,7 @@ import LayerVisualization from './LayerVisualization.jsx';
 import ActivationChart from './ActivationChart.jsx';
 import SimpleChartSettings from './SimpleChartSettings.jsx';
 import Parameters from './Parameters.jsx';
+import ChartGallery from './ChartGallery.jsx';
 import * as constants from '../core/constants.js';
 import './SimulationRunner.css';
 
@@ -17,6 +18,7 @@ export default function SimulationRunner() {
     const [isPaused, setIsPaused] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     const [maxSteps, setMaxSteps] = useState(constants.DEFAULT_MAX_STEPS);
+    const [maskEnabled, setMaskEnabled] = useState(constants.DEFAULT_MASK_ENABLED);
     const [maskStart, setMaskStart] = useState(constants.DEFAULT_MASK_START);
     const [speed, setSpeed] = useState(constants.DEFAULT_SPEED); // ms per step
     const [modelState, setModelState] = useState(null);
@@ -24,6 +26,8 @@ export default function SimulationRunner() {
     const [history, setHistory] = useState({ time: [], words: {}, letters: {}, wordPeaks: {}, letterPeaks: {} });
     const [showParameters, setShowParameters] = useState(false);
     const [showAbout, setShowAbout] = useState(false);
+    const [showGallery, setShowGallery] = useState(false);
+    const [savedCharts, setSavedCharts] = useState([]);
     const [trackedWords, setTrackedWords] = useState([]);
     const [showWordChart, setShowWordChart] = useState(false);
     const [showLetterCharts, setShowLetterCharts] = useState([false, false, false, false]);
@@ -75,9 +79,10 @@ export default function SimulationRunner() {
         const stimulus = customFeatures || [Array(14).fill(0.5), Array(14).fill(0.5), Array(14).fill(0.5), Array(14).fill(0.5)];
         setCurrentStimulus(stimulus);
 
-        // Use stimulus until maskStart, then ambiguous (0.5) for mask
-        const input = currentStep < maskStart ? stimulus :
-            [Array(14).fill(0.5), Array(14).fill(0.5), Array(14).fill(0.5), Array(14).fill(0.5)];
+        // Use stimulus until maskStart (if mask enabled), then ambiguous (0.5) for mask
+        const input = (maskEnabled && currentStep >= maskStart) ?
+            [Array(14).fill(0.5), Array(14).fill(0.5), Array(14).fill(0.5), Array(14).fill(0.5)] :
+            stimulus;
 
         model.stepModel(input, true);
         updateVisualization();
@@ -106,24 +111,22 @@ export default function SimulationRunner() {
                 newHistory.wordPeaks[word] = Math.max(currentPeak, activation);
             });
 
-            // Track ALL letters for positions with visible charts
-            showLetterCharts.forEach((isVisible, position) => {
-                if (isVisible) {
-                    const allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
-                    allLetters.forEach((letter, idx) => {
-                        const key = `${letter.toUpperCase()}_pos${position + 1}`;
-                        const activation = state.letters[position][idx];
-                        if (!newHistory.letters[key]) {
-                            newHistory.letters[key] = Array(prev.time.length).fill(null);
-                        }
-                        newHistory.letters[key] = [...newHistory.letters[key], activation];
+            // Track ALL letters for ALL positions
+            const allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+            for (let position = 0; position < 4; position++) {
+                allLetters.forEach((letter, idx) => {
+                    const key = `${letter.toUpperCase()}_pos${position + 1}`;
+                    const activation = state.letters[position][idx];
+                    if (!newHistory.letters[key]) {
+                        newHistory.letters[key] = Array(prev.time.length).fill(null);
+                    }
+                    newHistory.letters[key] = [...newHistory.letters[key], activation];
 
-                        // Update peak activation
-                        const currentPeak = newHistory.letterPeaks[key] || 0;
-                        newHistory.letterPeaks[key] = Math.max(currentPeak, activation);
-                    });
-                }
-            });
+                    // Update peak activation
+                    const currentPeak = newHistory.letterPeaks[key] || 0;
+                    newHistory.letterPeaks[key] = Math.max(currentPeak, activation);
+                });
+            }
 
             return newHistory;
         });
@@ -287,6 +290,21 @@ export default function SimulationRunner() {
         });
     };
 
+    const saveChartToGallery = (chartData) => {
+        const timestamp = new Date().toLocaleString();
+        setSavedCharts(prev => [...prev, { ...chartData, timestamp }]);
+    };
+
+    const removeChartFromGallery = (index) => {
+        setSavedCharts(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const clearGallery = () => {
+        if (window.confirm('Are you sure you want to clear all saved charts?')) {
+            setSavedCharts([]);
+        }
+    };
+
     return (
         <>
             {/* Parameters Drawer */}
@@ -302,6 +320,8 @@ export default function SimulationRunner() {
                             <Parameters
                                 parameters={parameters}
                                 onParametersChange={setParameters}
+                                maskEnabled={maskEnabled}
+                                onMaskEnabledChange={setMaskEnabled}
                                 maskStart={maskStart}
                                 onMaskStartChange={setMaskStart}
                                 maxSteps={maxSteps}
@@ -388,6 +408,12 @@ export default function SimulationRunner() {
                         >
                             ⚙ Parameters
                         </button>
+                        <button
+                            onClick={() => setShowGallery(!showGallery)}
+                            className={showGallery ? "btn-toggle active" : "btn-toggle"}
+                        >
+                            🖼 Gallery {savedCharts.length > 0 && `(${savedCharts.length})`}
+                        </button>
                     </div>
 
                     <div className="speed-control">
@@ -406,7 +432,7 @@ export default function SimulationRunner() {
 
                     <div className="step-counter">
                         Step: {currentStep} / {maxSteps}
-                        {currentStep >= maskStart && <span className="mask-indicator"> (Masked)</span>}
+                        {maskEnabled && currentStep >= maskStart && <span className="mask-indicator"> (Masked)</span>}
                     </div>
 
                     <button
@@ -437,8 +463,17 @@ export default function SimulationRunner() {
                             prepareLetterChartData={prepareLetterChartData}
                             letterChartSettings={letterChartSettings}
                             onLetterChartSettingsChange={updateLetterChartSettings}
+                            onSaveChartToGallery={saveChartToGallery}
                         />
                     </div>
+
+                    {showGallery && (
+                        <ChartGallery
+                            savedCharts={savedCharts}
+                            onRemoveChart={removeChartFromGallery}
+                            onClearGallery={clearGallery}
+                        />
+                    )}
                 </div>
             </div>
         </>

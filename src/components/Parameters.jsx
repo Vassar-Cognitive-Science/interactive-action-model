@@ -8,6 +8,8 @@ import './Parameters.css';
 export default function Parameters({
     parameters,
     onParametersChange,
+    maskEnabled,
+    onMaskEnabledChange,
     maskStart,
     onMaskStartChange,
     maxSteps,
@@ -33,6 +35,7 @@ export default function Parameters({
             DECAY_RATE: constants.DECAY_RATE,
             MIN_ACTIVATION: constants.MIN_ACTIVATION
         });
+        onMaskEnabledChange(constants.DEFAULT_MASK_ENABLED);
         onMaskStartChange(constants.DEFAULT_MASK_START);
         onMaxStepsChange(constants.DEFAULT_MAX_STEPS);
     };
@@ -180,17 +183,27 @@ export default function Parameters({
                                 onChange={(e) => onMaxStepsChange(parseInt(e.target.value))}
                             />
                         </label>
-                        <label>
-                            <span>Mask Start (step)</span>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <input
-                                type="number"
-                                step="1"
-                                min="0"
-                                max={maxSteps}
-                                value={maskStart}
-                                onChange={(e) => onMaskStartChange(parseInt(e.target.value))}
+                                type="checkbox"
+                                checked={maskEnabled}
+                                onChange={(e) => onMaskEnabledChange(e.target.checked)}
                             />
+                            <span>Enable Mask</span>
                         </label>
+                        {maskEnabled && (
+                            <label>
+                                <span>Mask Start (step)</span>
+                                <input
+                                    type="number"
+                                    step="1"
+                                    min="0"
+                                    max={maxSteps}
+                                    value={maskStart}
+                                    onChange={(e) => onMaskStartChange(parseInt(e.target.value))}
+                                />
+                            </label>
+                        )}
                     </div>
                 </div>
             </div>

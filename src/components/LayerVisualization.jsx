@@ -26,7 +26,8 @@ export default function LayerVisualization({
     onToggleLetterChart,
     prepareLetterChartData,
     letterChartSettings,
-    onLetterChartSettingsChange
+    onLetterChartSettingsChange,
+    onSaveChartToGallery
 }) {
     if (!modelState) {
         return (
@@ -70,6 +71,7 @@ export default function LayerVisualization({
                                         settings={wordChartSettings}
                                         onSettingsChange={onWordChartSettingsChange}
                                         settingsType="word"
+                                        onSaveToGallery={onSaveChartToGallery}
                                     />
                                 ) : (
                                     <div className="chart-placeholder">
@@ -101,6 +103,7 @@ export default function LayerVisualization({
                                 chartData={prepareLetterChartData(position)}
                                 chartSettings={letterChartSettings[position]}
                                 onChartSettingsChange={(newSettings) => onLetterChartSettingsChange(position, newSettings)}
+                                onSaveChartToGallery={onSaveChartToGallery}
                             />
                         ))}
                         </div>

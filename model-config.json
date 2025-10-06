@@ -15,6 +15,7 @@
   },
   "simulation": {
     "maxSteps": 40,
+    "maskEnabled": false,
     "maskStart": 20,
     "defaultSpeed": 100
   },

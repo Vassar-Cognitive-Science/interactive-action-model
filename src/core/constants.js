@@ -16,6 +16,7 @@ export const REST_GAIN = config.parameters.restGain;
 
 // Simulation defaults
 export const DEFAULT_MAX_STEPS = config.simulation.maxSteps;
+export const DEFAULT_MASK_ENABLED = config.simulation.maskEnabled;
 export const DEFAULT_MASK_START = config.simulation.maskStart;
 export const DEFAULT_SPEED = config.simulation.defaultSpeed;
 

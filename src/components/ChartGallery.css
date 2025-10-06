@@ -1,0 +1,98 @@
+.chart-gallery {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.chart-gallery-empty {
+    padding: 2rem;
+    text-align: center;
+    color: #7f8c8d;
+    background: white;
+    border-radius: 8px;
+    border: 2px dashed #bdc3c7;
+}
+
+.chart-gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.chart-gallery-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.2rem;
+}
+
+.gallery-clear-btn {
+    padding: 0.5rem 1rem;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.gallery-clear-btn:hover {
+    background-color: #c0392b;
+}
+
+.chart-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+    gap: 1.5rem;
+}
+
+.gallery-chart-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+}
+
+.gallery-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.gallery-chart-timestamp {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    font-weight: 500;
+}
+
+.gallery-remove-btn {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+}
+
+.gallery-remove-btn:hover {
+    color: #c0392b;
+    background-color: #fee;
+    border-radius: 4px;
+}
+
+.gallery-chart-container {
+    height: 250px;
+}
+
+@media (max-width: 1200px) {
+    .chart-gallery-grid {
+        grid-template-columns: 1fr;
+    }
+}

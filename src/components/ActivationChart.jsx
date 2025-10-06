@@ -22,7 +22,7 @@ ChartJS.register(
     Legend
 );
 
-export default function ActivationChart({ experimentData, settings, onSettingsChange, settingsType = 'word' }) {
+export default function ActivationChart({ experimentData, settings, onSettingsChange, settingsType = 'word', onSaveToGallery }) {
     const [showSettings, setShowSettings] = useState(false);
     if (!experimentData) {
         return <div>No data to display</div>;
@@ -147,25 +147,44 @@ export default function ActivationChart({ experimentData, settings, onSettingsCh
 
     return (
         <div style={{ position: 'relative' }}>
-            {settings && onSettingsChange && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
-                    <button
-                        onClick={() => setShowSettings(!showSettings)}
-                        style={{
-                            padding: '0.35rem 0.75rem',
-                            backgroundColor: showSettings ? '#2980b9' : '#3498db',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            fontSize: '0.85rem',
-                            cursor: 'pointer',
-                            fontWeight: 600
-                        }}
-                    >
-                        {showSettings ? '✕ Close' : '⚙ Settings'}
-                    </button>
+            {(settings && onSettingsChange) || onSaveToGallery ? (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    {onSaveToGallery && (
+                        <button
+                            onClick={() => onSaveToGallery(experimentData)}
+                            style={{
+                                padding: '0.35rem 0.75rem',
+                                backgroundColor: '#27ae60',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                fontSize: '0.85rem',
+                                cursor: 'pointer',
+                                fontWeight: 600
+                            }}
+                        >
+                            💾 Save to Gallery
+                        </button>
+                    )}
+                    {settings && onSettingsChange && (
+                        <button
+                            onClick={() => setShowSettings(!showSettings)}
+                            style={{
+                                padding: '0.35rem 0.75rem',
+                                backgroundColor: showSettings ? '#2980b9' : '#3498db',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                fontSize: '0.85rem',
+                                cursor: 'pointer',
+                                fontWeight: 600
+                            }}
+                        >
+                            {showSettings ? '✕ Close' : '⚙ Settings'}
+                        </button>
+                    )}
                 </div>
-            )}
+            ) : null}
 
             {showSettings && settings && onSettingsChange && (
                 <div style={{ marginBottom: '1rem' }}>

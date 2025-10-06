@@ -6,7 +6,7 @@ import './LetterPool.css';
 /**
  * Displays a single letter pool (26 letters at one position)
  */
-export default function LetterPool({ position, activations, showValues = false, showChart = false, onToggleChart, chartData, chartSettings, onChartSettingsChange }) {
+export default function LetterPool({ position, activations, showValues = false, showChart = false, onToggleChart, chartData, chartSettings, onChartSettingsChange, onSaveChartToGallery }) {
     const letters = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
     return (
@@ -58,6 +58,7 @@ export default function LetterPool({ position, activations, showValues = false, 
                             settings={chartSettings}
                             onSettingsChange={onChartSettingsChange}
                             settingsType="letter"
+                            onSaveToGallery={onSaveChartToGallery}
                         />
                     ) : (
                         <div className="chart-placeholder">

@@ -74,15 +74,15 @@ export class InteractiveActivationModel {
      * Maps 14 visual features to 26 letters
      * Feature PRESENT (1) -> excitation, ABSENT (0) -> inhibition
      */
-    initializeFeatureToLetterWeights() {
+    initializeFeatureToLetterWeights(excitation = FEATURE_LETTER_EXCITATION, inhibition = FEATURE_LETTER_INHIBITION) {
         const letterArray = Object.values(letters);
         const weights = Array(14).fill().map(() => Array(26).fill(0));
 
         for (let i = 0; i < letterArray.length; i++) {
             for (let j = 0; j < 14; j++) {
                 weights[j][i] = letterArray[i][j] ?
-                    FEATURE_LETTER_EXCITATION :
-                    -FEATURE_LETTER_INHIBITION;
+                    excitation :
+                    -inhibition;
             }
         }
 
@@ -94,7 +94,7 @@ export class InteractiveActivationModel {
      * Inverts the binary letter features FIRST, then applies weight mapping
      * This matches Python: w_from_features_to_letters_absence = 1 - w_from_features_to_letters
      */
-    initializeFeatureAbsenceToLetterWeights() {
+    initializeFeatureAbsenceToLetterWeights(excitation = FEATURE_LETTER_EXCITATION, inhibition = FEATURE_LETTER_INHIBITION) {
         const letterArray = Object.values(letters);
         const weights = Array(14).fill().map(() => Array(26).fill(0));
 
@@ -102,8 +102,8 @@ export class InteractiveActivationModel {
             for (let j = 0; j < 14; j++) {
                 // Invert the binary feature value (1 - value), then map to weights
                 weights[j][i] = (1 - letterArray[i][j]) ?
-                    FEATURE_LETTER_EXCITATION :
-                    -FEATURE_LETTER_INHIBITION;
+                    excitation :
+                    -inhibition;
             }
         }
 
@@ -114,16 +114,16 @@ export class InteractiveActivationModel {
      * Initialize letter-to-word weights for all 4 positions
      * Returns array of 4 weight matrices, one per position
      */
-    initializeLetterWordWeights() {
+    initializeLetterWordWeights(excitation = LETTER_WORD_EXCITATION, inhibition = LETTER_WORD_INHIBITION) {
         const weights = Array(this.numPositions).fill().map(() =>
-            Array(26).fill().map(() => Array(this.wordList.length).fill(-LETTER_WORD_INHIBITION))
+            Array(26).fill().map(() => Array(this.wordList.length).fill(-inhibition))
         );
 
         // Set excitatory connections based on word list
         this.wordList.forEach((word, wordIndex) => {
             for (let pos = 0; pos < this.numPositions; pos++) {
                 const letterIndex = letterToIndex(word[pos]);
-                weights[pos][letterIndex][wordIndex] = LETTER_WORD_EXCITATION;
+                weights[pos][letterIndex][wordIndex] = excitation;
             }
         });
 
@@ -134,16 +134,16 @@ export class InteractiveActivationModel {
      * Initialize word-to-letter weights
      * Returns array of 4 weight matrices, one per position
      */
-    initializeWordLetterWeights() {
+    initializeWordLetterWeights(excitation = WORD_LETTER_EXCITATION, inhibition = WORD_LETTER_INHIBITION) {
         const weights = Array(this.numPositions).fill().map(() =>
-            Array(this.wordList.length).fill().map(() => Array(26).fill(-WORD_LETTER_INHIBITION))
+            Array(this.wordList.length).fill().map(() => Array(26).fill(-inhibition))
         );
 
         // Set excitatory connections based on word list
         this.wordList.forEach((word, wordIndex) => {
             for (let pos = 0; pos < this.numPositions; pos++) {
                 const letterIndex = letterToIndex(word[pos]);
-                weights[pos][wordIndex][letterIndex] = WORD_LETTER_EXCITATION;
+                weights[pos][wordIndex][letterIndex] = excitation;
             }
         });
 

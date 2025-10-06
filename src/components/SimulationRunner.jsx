@@ -181,6 +181,49 @@ export default function SimulationRunner() {
         };
     }, [isRunning, isPaused, speed, currentStep]);
 
+    // Update model parameters when they change
+    useEffect(() => {
+        // Update letter pool parameters
+        model.letterPools.forEach(pool => {
+            pool.decay = parameters.DECAY_RATE;
+            pool.min = parameters.MIN_ACTIVATION;
+            pool.lateralInhibition = parameters.LETTER_LETTER_INHIBITION;
+        });
+
+        // Update word pool parameters
+        model.wordPool.decay = parameters.DECAY_RATE;
+        model.wordPool.min = parameters.MIN_ACTIVATION;
+        model.wordPool.lateralInhibition = parameters.WORD_WORD_INHIBITION;
+
+        // Rebuild weight matrices with new parameters
+        model.featureToLetterWeights = model.initializeFeatureToLetterWeights(
+            parameters.FEATURE_LETTER_EXCITATION,
+            parameters.FEATURE_LETTER_INHIBITION
+        );
+        model.featureAbsenceToLetterWeights = model.initializeFeatureAbsenceToLetterWeights(
+            parameters.FEATURE_LETTER_EXCITATION,
+            parameters.FEATURE_LETTER_INHIBITION
+        );
+        model.letterToWordWeights = model.initializeLetterWordWeights(
+            parameters.LETTER_WORD_EXCITATION,
+            parameters.LETTER_WORD_INHIBITION
+        );
+        model.wordToLetterWeights = model.initializeWordLetterWeights(
+            parameters.WORD_LETTER_EXCITATION,
+            parameters.WORD_LETTER_INHIBITION
+        );
+
+        // Update the weight references in pools
+        model.letterPools.forEach((pool, i) => {
+            pool.weights = [
+                model.featureToLetterWeights,
+                model.featureAbsenceToLetterWeights,
+                model.wordToLetterWeights[i]
+            ];
+        });
+        model.wordPool.weights = model.letterToWordWeights;
+    }, [parameters]);
+
     // Initialize
     useEffect(() => {
         updateVisualization();

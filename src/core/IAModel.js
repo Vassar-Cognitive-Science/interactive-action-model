@@ -171,15 +171,21 @@ export class InteractiveActivationModel {
             Array(this.wordList.length).fill(0);
 
         // Update letter pools
-        // Compute absence features: 1 - feature_value for each feature
+        // Compute presence and absence features
+        // 0 = absent (presence=0, absence=1)
+        // 0.5 = ambiguous (presence=0, absence=0) - no information
+        // 1 = present (presence=1, absence=0)
+        const presenceFeatures = inputFeatures.map(features =>
+            features.map(f => f === 1 ? 1 : 0)
+        );
         const absenceFeatures = inputFeatures.map(features =>
-            features.map(f => 1 - f)
+            features.map(f => f === 0 ? 1 : 0)
         );
 
         this.letterPools.forEach((pool, i) => {
             const input = [
-                inputFeatures[i],      // Feature presence
-                absenceFeatures[i],    // Feature absence (1 - feature)
+                presenceFeatures[i],   // Feature presence
+                absenceFeatures[i],    // Feature absence
                 wordState              // Top-down from words
             ];
             pool.step(input);

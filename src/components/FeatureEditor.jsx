@@ -67,6 +67,10 @@ export default function FeatureEditor({ onFeaturesChange }) {
                     (o || xFeatures[i]) ? FEATURE_STATE.PRESENT : FEATURE_STATE.ABSENT
                 );
             }
+            if (char === '@') {
+                // @ means all features ambiguous
+                return Array(14).fill(FEATURE_STATE.AMBIGUOUS);
+            }
             if (char === ' ' || !letters[char]) {
                 return Array(14).fill(FEATURE_STATE.ABSENT);
             }

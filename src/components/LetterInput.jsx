@@ -14,8 +14,8 @@ export default function LetterInput({ value = '', onChange, disabled = false }) 
     const handleChange = (index, newValue) => {
         if (disabled) return;
 
-        // Allow letters and # for mask
-        const char = newValue.toLowerCase().replace(/[^a-z#]/g, '');
+        // Allow letters, #, and @
+        const char = newValue.toLowerCase().replace(/[^a-z#@]/g, '');
 
         if (char) {
             // Update the value - always use the last character typed (replace mode)
@@ -51,11 +51,11 @@ export default function LetterInput({ value = '', onChange, disabled = false }) 
     const handleKeyDown = (index, e) => {
         if (disabled) return;
 
-        // If it's a letter key or # and the box already has content, prevent default and handle replacement
-        if (e.key.length === 1 && /[a-zA-Z#]/.test(e.key)) {
+        // If it's a letter key, #, or @ and the box already has content, prevent default and handle replacement
+        if (e.key.length === 1 && /[a-zA-Z#@]/.test(e.key)) {
             e.preventDefault(); // Prevent the default input behavior
 
-            // Directly set the new letter or #
+            // Directly set the new letter, #, or @
             const newLetters = [...letters];
             newLetters[index] = e.key.toLowerCase();
 
@@ -143,7 +143,7 @@ export default function LetterInput({ value = '', onChange, disabled = false }) 
         e.preventDefault();
 
         const pastedText = e.clipboardData.getData('text');
-        const cleanText = pastedText.toLowerCase().replace(/[^a-z#]/g, '').slice(0, 4);
+        const cleanText = pastedText.toLowerCase().replace(/[^a-z#@]/g, '').slice(0, 4);
 
         onChange(cleanText);
 
